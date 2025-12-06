@@ -1,0 +1,46 @@
+.link {
+  display: inline-block;
+  position: relative;
+}
+.link:after,
+.link:before {
+  content: "";
+  background-color: currentColor;
+  display: block;
+  height: 1px;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  width: 0;
+  transition-property: width;
+  transition-timing-function: cubic-bezier(0.135, 0.9, 0.15, 1);
+  transition-duration: 0.9s;
+}
+.link:after {
+  display: none;
+}
+.link--visible:after,
+.link:active:before,
+.link:hover:before {
+  left: 0;
+  right: auto;
+  width: 100%;
+}
+.link--visible:after {
+  display: block;
+}
+.link--visible:before {
+  transition-delay: 0.2s;
+}
+.link--visible:hover:after {
+  right: 0;
+  left: auto;
+  width: 0;
+}
+.link--visible:hover:before {
+  left: 0;
+  right: auto;
+  width: 100%;
+}
