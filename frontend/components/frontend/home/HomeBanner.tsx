@@ -1,15 +1,38 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
-const HomeBanner = ({ section }) => {
+const HomeBanner = ({ section }: { section: any }) => {
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Calculate scale factor based on scroll position
+  // Starts at 1 and increases as the user scrolls down
+  const scale = 1 + scrollY * 0.0005;
   if (!section) return null;
   return (
-    <div className="min-h-[75vh] relative">
-      <h1 className="text-[64px] font-almiregodisplay flex justify-center mt-28 mx-auto max-w-5xl">
-        {section.title}
-        {/* {section.shortDescription} */}
-        {/* We are your digital partner for <br /> strategy, design and development. */}
-      </h1>
-      <div className="absolute bottom-0 left-0 text-[24vw] font-almiregodisplay font-light w-[100%]">
+    <div className="min-h-[calc(100vh-60px)] relative overflow-hidden">
+      <div className="flex flex-col justify-top items-center min-h-[calc(100vh-100px)]">
+        <h1 className="text-[64px] font-almiregodisplay flex justify-center mt-40 mx-auto max-w-5xl text-center">
+          {section.title}
+          {/* {section.shortDescription} */}
+          {/* We are your digital partner for <br /> strategy, design and development. */}
+        </h1>
+      </div>
+      <div 
+        className="absolute bottom-0 left-0 w-[100%] flex justify-center items-end"
+        style={{ 
+          transform: `scale(${scale})`, 
+          transformOrigin: "bottom center",
+          willChange: "transform"
+        }}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="1920"

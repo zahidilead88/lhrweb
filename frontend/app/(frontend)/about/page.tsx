@@ -1,11 +1,5 @@
-import React from "react";
+import PageSections from "@/components/frontend/PageSections";
 
-const About = () => {
-  return (
-    <div>
-      <h2>About Us</h2>
-    </div>
-  );
-};
-
-export default About;
+export default function AboutPage() {
+  return <PageSections page="about" />;
+}

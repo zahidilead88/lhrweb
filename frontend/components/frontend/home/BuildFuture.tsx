@@ -1,10 +1,10 @@
 import Link from "next/link";
 import React from "react";
 
-const BuildFuture = ({ section }) => {
+const BuildFuture = ({ section }: { section: any }) => {
   if (!section) return null;
   return (
-    <div className="flex justify-between p-4">
+    <div className="flex justify-between p-4 min-h-screen">
       <div className="w-[80%]">
         <h2 className="font-almiregodisplay text-[5vw]">{section.title}</h2>
         <p>{section.shortDescription}</p>

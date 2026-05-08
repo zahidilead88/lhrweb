@@ -4,519 +4,20 @@ import ConversionSection from "@/components/frontend/home/ConversionSection";
 const Footer = () => {
   return (
     <>
-      <ConversionSection />
+      {/* <ConversionSection /> */}
 
-      <div className="w-full pb-20 | lg:pb-24 | 2xl:pb-32 | 4xl:pb-40">
-        <div className="px-2 | sm:px-6 | xl:px-12 | 2xl:px-20 | 3xl:px-40 | 4xl:px-60">
-          <div className="w-full relative px-2 | lg:px-3 | xl:px-4">
-            <div className="w-full pt-10 | lg:pt-16 | 2xl:pt-24 bg-gray-600 rounded-2xl transform-gpu rounded-tl-none relative overflow-hidden | lg:rounded-3xl | dark:bg-grayDark-500">
-              <div className="px-0">
-                <div className="bg-white rounded-br-2xl absolute top-0 left-0 z-20 w-40 h-14 | lg:rounded-br-3xl lg:w-80 lg:h-20 | dark:bg-grayDark-600">
-                  <svg
-                    id="Layer_1"
-                    className="w-10 h-10 | lg:w-12 lg:h-12 text-white fill-current absolute bottom-px -left-px transform translate-y-full dark:text-grayDark-600"
-                    version="1.1"
-                    xmlns="http://www.w3.org/2000/svg"
-                    x={0}
-                    y={0}
-                    viewBox="0 0 100 100"
-                    xmlSpace="preserve"
-                  >
-                    <path d="M51.9 0v1.9c-27.6 0-50 22.4-50 50H0V0h51.9z" />
-                  </svg>
-                  <svg
-                    id="Layer_1"
-                    className="w-10 h-10 | lg:w-12 lg:h-12 text-white fill-current absolute -top-px right-px transform translate-x-full dark:text-grayDark-600"
-                    version="1.1"
-                    xmlns="http://www.w3.org/2000/svg"
-                    x={0}
-                    y={0}
-                    viewBox="0 0 100 100"
-                    xmlSpace="preserve"
-                  >
-                    <path d="M51.9 0v1.9c-27.6 0-50 22.4-50 50H0V0h51.9z" />
-                  </svg>
-                </div>
-                <div className="w-full flex flex-wrap mb-5 relative z-20 mt-10 | lg:mt-0 lg:-mb-16">
-                  <div className="px-2 | lg:px-3 | xl:px-4 w-full">
-                    <div className="flex flex-col space-y-3 | lg:space-y-5 items-center text-center">
-                      <div className="inline-flex items-center space-x-2  ">
-                        <div className="bg-white w-1.5 h-1.5 rounded-full" />
-                        <div className="font-light text-sm | lg:text-base text-white">
-                          Careers at Shape
-                        </div>
-                      </div>
-                      <h2 className="text-2xl | md:text-3xl | xl:text-4xl | 4xl:text-5xl font-sans-primary tracking-tight text-white leading-none text-balance max-w-lg">
-                        Want to join these beautiful humans?
-                      </h2>
-                      <div className="relative group inline-flex items-center">
-                        <svg
-                          width={0}
-                          height={0}
-                          className="absolute hidden"
-                          colorInterpolationFilters="sRGB"
-                        >
-                          <defs>
-                            <filter id="buttonFilter">
-                              <feGaussianBlur
-                                in="SourceGraphic"
-                                stdDeviation={5}
-                                result="blur"
-                              />
-                              <feColorMatrix
-                                in="blur"
-                                mode="matrix"
-                                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
-                                result="buttonFilter"
-                              />
-                              <feComposite
-                                in="SourceGraphic"
-                                in2="buttonFilter"
-                                operator="atop"
-                              />
-                              <feBlend in="SourceGraphic" in2="buttonFilter" />
-                            </filter>
-                          </defs>
-                        </svg>
-                        <a
-                          href="https://madebyshape.co.uk/careers/"
-                          className="inline-flex relative group outline-none  | focus:outline-none "
-                          style={{ filter: "url(#buttonFilter)" }}
-                        >
-                          <div className="w-auto inline-flex items-center justify-center relative leading-tight shadow-none overflow-hidden rounded-full border-default bg-primary-600 text-gray-600 py-2 px-5">
-                            <div className="relative inline-flex top-px flex-shrink-0">
-                              <div>View open roles</div>
-                            </div>
-                          </div>
-                          <div className="bg-primary-600 flex-shrink-0 overflow-hidden flex items-center justify-center -ml-1 rounded-full transform transition-transform | w-9 h-9 | xl:group-hover:translate-x-3  xl:group-hover:rotate-45 | js-button-icon" />
-                        </a>
-                        <div className="w-9 h-9 absolute top-0 right-0 flex items-center justify-center z-20 transition-transform transform w-9 h-9 | xl:group-hover:translate-x-3  xl:group-hover:rotate-45 || js-button-arrow">
-                          <div className="relative overflow-hidden text-gray-600">
-                            <div className="relative top-0 left-0 transition-transform transform || js-button-arrow-icon-primary ">
-                              <svg
-                                className="w-3 h-3 fill-current"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 384 512"
-                              >
-                                <path d="M328 96h24v288h-48V177.9L81 401l-17 17-33.9-34 17-17 223-223H64V96h264z" />
-                              </svg>
-                            </div>
-                            <div className="absolute top-0 left-0 transition-transform transform translate-y-full -translate-x-full || js-button-arrow-icon-secondary ">
-                              <svg
-                                className="w-3 h-3 fill-current"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 384 512"
-                              >
-                                <path d="M328 96h24v288h-48V177.9L81 401l-17 17-33.9-34 17-17 223-223H64V96h264z" />
-                              </svg>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="gap-4 | lg:gap-6 | xl:gap-8 grid w-screen left-1/2 -translate-x-1/2 transform relative z-10 grid-cols-3 | lg:grid-cols-5">
-                  <div className=" gap-4 | lg:gap-6 | xl:gap-8 grid-cols-1 w-full transform  grid">
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 ">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-219.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143506&s=d54fdf11bdd202878467ef0658ca8bbd 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-219.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143506&s=7b54b6f3dc24574ec39589779a99c290 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-219.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143506&s=d54fdf11bdd202878467ef0658ca8bbd"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-219.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143506&s=6d396655022c9e5b9264f2755a017abc 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-219.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143506&s=6a4a82d845a48e711ffa0bde77907f02 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 219"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 ">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-216.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143500&s=c2ad95fef3f8b63482c9fc2e533839f8 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-216.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143500&s=14c342505f57e1f714b52facdce29bc1 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-216.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143500&s=c2ad95fef3f8b63482c9fc2e533839f8"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-216.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143500&s=85abb0da7aa6e103d167bcf10aa8be12 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-216.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143500&s=ad246d61452c29760a93e5b9c12b8dad 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 216"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                  </div>
-                  <div className=" gap-4 | lg:gap-6 | xl:gap-8 grid-cols-1 w-full transform lg:translate-y-16 grid">
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 transform translate-y-10 | lg:translate-y-0">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-208.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143487&s=19b949fe09dfe3e0161a0a345a83f057 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-208.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143487&s=473926e06f19c0e6085e33f2ba80784a 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-208.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143487&s=19b949fe09dfe3e0161a0a345a83f057"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-208.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143487&s=3999d2aa676d2e2e3a05f639e37652ff 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-208.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143487&s=df43f2707d3d276ade74746420a58472 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 208"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 transform translate-y-10 | lg:translate-y-0">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-204.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706011711&s=65df1201d3ce02cd144324370898c0e5 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-204.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706011711&s=af9eb16d5954b98c4c1c4b8a43900833 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-204.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706011711&s=65df1201d3ce02cd144324370898c0e5"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-204.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706011711&s=abac91c8b5c69d351a2c65fab65a25a2 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-204.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706011711&s=4f017f1d1c332613ace547ff8db67808 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 204"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                  </div>
-                  <div className=" gap-4 | lg:gap-6 | xl:gap-8 grid-cols-1 w-full transform lg:translate-y-32 grid">
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 ">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-194.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143471&s=0c1cdeabf0e2b18f44a8c9412fb9aed2 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-194.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143471&s=b35d4a42812427d74987b3fb51210950 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-194.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143471&s=0c1cdeabf0e2b18f44a8c9412fb9aed2"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-194.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143471&s=1d6e9d6a7f43acd6c564ccdd39b193ed 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-194.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143471&s=6c1d39fd8f8b68f2bebc1ebc54848a26 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 194"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 ">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-202.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143474&s=43b8c998b09a0bf3107434396d697245 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-202.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143474&s=c1f0fbfc5f6f309c943b989f51fa0ceb 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-202.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143474&s=43b8c998b09a0bf3107434396d697245"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-202.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143474&s=adebde2ea7276552fe3f76d3a9d55d52 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-202.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143474&s=1858570cd5ca88e5726e7d46dc84bd3b 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 202"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                  </div>
-                  <div className=" gap-4 | lg:gap-6 | xl:gap-8 grid-cols-1 w-full transform lg:translate-y-16 hidden | lg:grid">
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 ">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-225.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143517&s=30e5faa3c188e8f425300947c23a10c0 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-225.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143517&s=0483682169689d5e7e2d0b84510b1287 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-225.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143517&s=30e5faa3c188e8f425300947c23a10c0"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-225.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143517&s=a06acf5f2d142099ff670c6a0e4329d1 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-225.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143517&s=41f5935806649e774342d31d6f2b2083 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 225"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 ">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-182.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143456&s=e070e1166ba1845ef70cd4636075610f 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-182.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143456&s=b0270bce8318ca8ab7f07a49426a1aee 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-182.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143456&s=e070e1166ba1845ef70cd4636075610f"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-182.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143456&s=af13c4cf68ac6752dabbe82ab74e35b2 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-182.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143456&s=3baf357ba919c05a8af63a924a2f02e6 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 182"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                  </div>
-                  <div className=" gap-4 | lg:gap-6 | xl:gap-8 grid-cols-1 w-full transform  hidden | lg:grid">
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 ">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-37.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706010514&s=b94073dd6914c5bdff5ac9fa09cc3dda 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-37.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706010514&s=c1ef92e82641d6c7613ca0cda75b2d30 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-37.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706010514&s=b94073dd6914c5bdff5ac9fa09cc3dda"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-37.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706010514&s=b4ce83711863e02000419d57f1e624a2 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-37.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1706010514&s=aa0676e2b0328aaddfd925bf68808bdf 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 37"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                    <div className="w-full aspect-ratio-1/1 relative rounded-2xl transform-gpu overflow-hidden bg-gray-500 | dark:bg-grayDark-400 ">
-                      <picture>
-                        <source
-                          type="image/webp"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-32.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143423&s=9ffeb9f9b44ab8f66814d50ddfe71737 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-32.jpg?w=600&h=600&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143423&s=ad504fd7c934a9fe84eed57a12f93982 600w"
-                          sizes="100vw"
-                        />
-                        <img
-                          src="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-32.jpg?w=400&h=400&q=80&fm=webp&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143423&s=9ffeb9f9b44ab8f66814d50ddfe71737"
-                          srcSet="https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-32.jpg?w=400&h=400&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143423&s=0489943aca15eebbb33e4ed97697595f 400w, https://made-byshape.transforms.svdcdn.com/production/uploads/images/India-2022/People-in-Studio/Shape-April-2022-HR-32.jpg?w=600&h=600&q=95&auto=format&fit=crop&crop=focalpoint&fp-x=0.5&fp-y=0.5&dm=1651143423&s=5c8ef545b653c016ac12f26ec86bfeac 600w"
-                          sizes="100vw"
-                          alt="Shape April 2022 HR 32"
-                          className=" w-full   absolute top-0 left-0 w-full h-full object-cover object-center"
-                          loading="lazy"
-                          width={600}
-                          height={600}
-                        />
-                      </picture>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
       <div className="w-full bg-black overflow-hidden">
         <div className="w-full grid grid-cols-4 p-20 justify-between relative z-30">
-          <div className="w-full mb-10 flex flex-wrap flex-col md:flex-row md:flex-nowrap md:mb-24 lg:items-start lg:justify-start lg:flex-col lg:flex-wrap lg:pl-0 lg:mb-0">
-            <h2 className="text-xl tracking-tight text-white leading-tighter mb-5">
-              Do you like <br />
-              what you see?
-            </h2>
-            <div className="flex items-start flex-col space-y-5 md:mt-1 md:flex-row md:items-center md:space-y-0 md:space-x-5 lg:mt-0 lg:space-y-5 lg:space-x-0 lg:items-start lg:flex-col xl:w-full xl:items-center xl:flex-row xl:space-y-0 xl:space-x-8">
-              <div className="relative group inline-flex items-center">
-                <a
-                  href="https://madebyshape.co.uk/project-planner/"
-                  className="inline-flex relative group outline-none  | focus:outline-none "
-                >
-                  <div className="w-auto inline-flex items-center justify-center relative leading-tight shadow-none overflow-hidden rounded-full border-default bg-primary-600 text-gray-600 flex-shrink-0 py-2 px-5">
-                    <div className="relative inline-flex top-px flex-shrink-0">
-                      <div>Start a project</div>
-                    </div>
-                  </div>
-                  <div className="bg-primary-600 flex-shrink-0 overflow-hidden flex items-center justify-center -ml-1 rounded-full transform transition-transform | w-9 h-9 | xl:group-hover:translate-x-3  xl:group-hover:rotate-45 | js-button-icon" />
-                </a>
-                <div className="w-9 h-9 absolute top-0 right-0 flex items-center justify-center z-20 transition-transform transform w-9 h-9 | xl:group-hover:translate-x-3  xl:group-hover:rotate-45 || js-button-arrow">
-                  <div className="relative overflow-hidden text-gray-600">
-                    <div className="relative top-0 left-0 transition-transform transform || js-button-arrow-icon-primary ">
-                      <svg
-                        className="w-3 h-3 fill-current"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 384 512"
-                      >
-                        <path d="M328 96h24v288h-48V177.9L81 401l-17 17-33.9-34 17-17 223-223H64V96h264z" />
-                      </svg>
-                    </div>
-                    <div className="absolute top-0 left-0 transition-transform transform translate-y-full -translate-x-full || js-button-arrow-icon-secondary ">
-                      <svg
-                        className="w-3 h-3 fill-current"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 384 512"
-                      >
-                        <path d="M328 96h24v288h-48V177.9L81 401l-17 17-33.9-34 17-17 223-223H64V96h264z" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start gap-1 mt-10">
-              <a
-                href="https://www.linkedin.com/company/madebyshape/mycompany/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center bg-primary-600 text-gray-600 translate-z-0 rounded-full w-8 h-8 duration-400 | xl:hover:bg-gray-600 xl:hover:text-white | lg:dark:hover:bg-grayDark-400"
-              >
-                <div className="sr-only">MadeByShape</div>
-                <svg
-                  className="w-3.5 h-3.5 fill-current"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 448 512"
-                >
-                  <path d="M416 32H31.9C14.3 32 0 46.5 0 64.3v383.4C0 465.5 14.3 480 31.9 480H416c17.6 0 32-14.5 32-32.3V64.3c0-17.8-14.4-32.3-32-32.3zM135.4 416H69V202.2h66.5V416zm-33.2-243c-21.3 0-38.5-17.3-38.5-38.5S80.9 96 102.2 96c21.2 0 38.5 17.3 38.5 38.5 0 21.3-17.2 38.5-38.5 38.5zm282.1 243h-66.4V312c0-24.8-.5-56.7-34.5-56.7-34.6 0-39.9 27-39.9 54.9V416h-66.4V202.2h63.7v29.2h.9c8.9-16.8 30.6-34.5 62.9-34.5 67.2 0 79.7 44.3 79.7 101.9V416z" />
-                </svg>
-              </a>
-              <a
-                href="https://twitter.com/madebyshape"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center bg-primary-600 text-gray-600 translate-z-0 rounded-full w-8 h-8 duration-400 | xl:hover:bg-gray-600 xl:hover:text-white | lg:dark:hover:bg-grayDark-400"
-              >
-                <div className="sr-only">MadeByShape</div>
-                <svg
-                  className="w-3.5 h-3.5 fill-current"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 512 512"
-                >
-                  <path d="M389.2 48h70.6L305.6 224.2 487 464H345L233.7 318.6 106.5 464H35.8l164.9-188.5L26.8 48h145.6l100.5 132.9L389.2 48zm-24.8 373.8h39.1L151.1 88h-42l255.3 333.8z" />
-                </svg>
-              </a>
-              <a
-                href="https://github.com/madebyshape/"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center bg-primary-600 text-gray-600 translate-z-0 rounded-full w-8 h-8 duration-400 | xl:hover:bg-gray-600 xl:hover:text-white | lg:dark:hover:bg-grayDark-400"
-              >
-                <div className="sr-only">MadeByShape</div>
-                <svg
-                  className="w-3.5 h-3.5 fill-current"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 496 512"
-                >
-                  <path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z" />
-                </svg>
-              </a>
-              <a
-                href="https://instagram.com/madebyshape"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center bg-primary-600 text-gray-600 translate-z-0 rounded-full w-8 h-8 duration-400 | xl:hover:bg-gray-600 xl:hover:text-white | lg:dark:hover:bg-grayDark-400"
-              >
-                <div className="sr-only">MadeByShape</div>
-                <svg
-                  className="w-3.5 h-3.5 fill-current"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 448 512"
-                >
-                  <path d="M224.1 141c-63.6 0-114.9 51.3-114.9 114.9s51.3 114.9 114.9 114.9S339 319.5 339 255.9 287.7 141 224.1 141zm0 189.6c-41.1 0-74.7-33.5-74.7-74.7s33.5-74.7 74.7-74.7 74.7 33.5 74.7 74.7-33.6 74.7-74.7 74.7zm146.4-194.3c0 14.9-12 26.8-26.8 26.8-14.9 0-26.8-12-26.8-26.8s12-26.8 26.8-26.8 26.8 12 26.8 26.8zm76.1 27.2c-1.7-35.9-9.9-67.7-36.2-93.9-26.2-26.2-58-34.4-93.9-36.2-37-2.1-147.9-2.1-184.9 0-35.8 1.7-67.6 9.9-93.9 36.1s-34.4 58-36.2 93.9c-2.1 37-2.1 147.9 0 184.9 1.7 35.9 9.9 67.7 36.2 93.9s58 34.4 93.9 36.2c37 2.1 147.9 2.1 184.9 0 35.9-1.7 67.7-9.9 93.9-36.2 26.2-26.2 34.4-58 36.2-93.9 2.1-37 2.1-147.8 0-184.8zM398.8 388c-7.8 19.6-22.9 34.7-42.6 42.6-29.5 11.7-99.5 9-132.1 9s-102.7 2.6-132.1-9c-19.6-7.8-34.7-22.9-42.6-42.6-11.7-29.5-9-99.5-9-132.1s-2.6-102.7 9-132.1c7.8-19.6 22.9-34.7 42.6-42.6 29.5-11.7 99.5-9 132.1-9s102.7-2.6 132.1 9c19.6 7.8 34.7 22.9 42.6 42.6 11.7 29.5 9 99.5 9 132.1s2.7 102.7-9 132.1z" />
-                </svg>
-              </a>
-              <a
-                href="https://www.behance.net/madebyshape"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center bg-primary-600 text-gray-600 translate-z-0 rounded-full w-8 h-8 duration-400 | xl:hover:bg-gray-600 xl:hover:text-white | lg:dark:hover:bg-grayDark-400"
-              >
-                <div className="sr-only">MadeByShape</div>
-                <svg
-                  className="w-3.5 h-3.5 fill-current"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 576 512"
-                >
-                  <path d="M232 237.2c31.8-15.2 48.4-38.2 48.4-74 0-70.6-52.6-87.8-113.3-87.8H0v354.4h171.8c64.4 0 124.9-30.9 124.9-102.9 0-44.5-21.1-77.4-64.7-89.7zM77.9 135.9H151c28.1 0 53.4 7.9 53.4 40.5 0 30.1-19.7 42.2-47.5 42.2h-79v-82.7zm83.3 233.7H77.9V272h84.9c34.3 0 56 14.3 56 50.6 0 35.8-25.9 47-57.6 47zm358.5-240.7H376V94h143.7v34.9zM576 305.2c0-75.9-44.4-139.2-124.9-139.2-78.2 0-131.3 58.8-131.3 135.8 0 79.9 50.3 134.7 131.3 134.7 61.3 0 101-27.6 120.1-86.3H509c-6.7 21.9-34.3 33.5-55.7 33.5-41.3 0-63-24.2-63-65.3h185.1c.3-4.2.6-8.7.6-13.2zM390.4 274c2.3-33.7 24.7-54.8 58.5-54.8 35.4 0 53.2 20.8 56.2 54.8H390.4z" />
-                </svg>
-              </a>
-            </div>
-          </div>
           <div className="relative z-20">
             <div className="text-gray-200 font-light mb-3 text-sm | md:text-base | dark:text-gray-100">
-              Learn
+              SITEMAP
             </div>
             <ul className="space-y-1">
               <li className="flex items-center space-x-2">
                 <a
-                  href="https://madebyshape.co.uk/about/"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
-                >
-                  About
-                </a>
-              </li>
-              <li className="flex items-center space-x-2">
-                <a
-                  href="https://madebyshape.co.uk/culture/"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
-                >
-                  Culture
-                </a>
-              </li>
-              <li className="flex items-center space-x-2">
-                <a
-                  href="https://madebyshape.co.uk/testimonials/"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
-                >
-                  Testimonials
-                </a>
-              </li>
-              <li className="flex items-center space-x-2">
-                <a
-                  href="https://madebyshape.co.uk/processes/"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
-                >
-                  Processes
-                </a>
-              </li>
-              <li className="flex items-center space-x-2">
-                <a
-                  href="https://madebyshape.co.uk/frequently-asked-questions/"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
-                >
-                  FAQs
-                </a>
-              </li>
-              <li className="flex items-center space-x-2">
-                <a
-                  href="https://madebyshape.co.uk/branding-faqs/"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
-                >
-                  Branding FAQs
-                </a>
-              </li>
-              <li className="flex items-center space-x-2">
-                <a
-                  href="https://madebyshape.co.uk/web-design-blog/"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
-                >
-                  Blog
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div className="relative z-20">
-            <div className="text-gray-200 font-light mb-3 text-sm | md:text-base | dark:text-gray-100">
-              Explore
-            </div>
-            <ul className="space-y-1">
-              <li className="flex items-center space-x-2">
-                <a
-                  href="https://madebyshape.co.uk/"
+                  href="/"
                   className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
                 >
                   Home
@@ -524,18 +25,23 @@ const Footer = () => {
               </li>
               <li className="flex items-center space-x-2">
                 <a
-                  href="https://madebyshape.co.uk/work/"
+                  href="/projects"
                   className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
                 >
                   Work
                 </a>
-                <div className="-mt-0.5 uppercase pointer-events-none rounded-full z-20 bg-primary-600 text-gray-600 text-xs pt-0.5 pb-px px-2 leading-tighter tracking-tight">
-                  New
-                </div>
               </li>
               <li className="flex items-center space-x-2">
                 <a
-                  href="https://madebyshape.co.uk/services/"
+                  href="/about"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  Agency
+                </a>
+              </li>
+              <li className="flex items-center space-x-2">
+                <a
+                  href="/services"
                   className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
                 >
                   Services
@@ -543,46 +49,131 @@ const Footer = () => {
               </li>
               <li className="flex items-center space-x-2">
                 <a
-                  href="https://madebyshape.co.uk/careers/"
+                  href="/blog"
                   className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
                 >
-                  Careers
+                  Journal
                 </a>
               </li>
               <li className="flex items-center space-x-2">
                 <a
-                  href="https://madebyshape.co.uk/sectors/"
+                  href="/tools"
                   className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
                 >
-                  Sectors
+                  Tools
                 </a>
               </li>
               <li className="flex items-center space-x-2">
                 <a
-                  href="https://madebyshape.co.uk/hex-test/"
-                  target="_blank"
+                  href="/contact"
                   className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
                 >
-                  Hex Test
-                </a>
-              </li>
-              <li className="flex items-center space-x-2">
-                <a
-                  href="https://madebyshape.co.uk/contact/"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
-                >
-                  Contact
+                  Start a Project
                 </a>
               </li>
             </ul>
           </div>
-          <div className="w-full max-w-xs transform">
+          <div className="relative z-20">
+            <div className="text-gray-200 font-light mb-3 text-sm | md:text-base | dark:text-gray-100">
+              SERVICES
+            </div>
+            <ul className="space-y-1">
+              <li className="flex items-center space-x-2">
+                <a
+                  href="/services#brand-design"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  Brand Design
+                </a>
+              </li>
+              <li className="flex items-center space-x-2">
+                <a
+                  href="/services#illustration"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  Illustration
+                </a>
+              </li>
+              <li className="flex items-center space-x-2">
+                <a
+                  href="/services#web-design"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  Web Design
+                </a>
+              </li>
+              <li className="flex items-center space-x-2">
+                <a
+                  href="/services#product-design"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  Product Design
+                </a>
+              </li>
+              <li className="flex items-center space-x-2">
+                <a
+                  href="/services#print-packaging"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  Print & Packaging
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div className="relative z-20">
+            <div className="text-gray-200 font-light mb-3 text-sm | md:text-base | dark:text-gray-100">
+              SOCIAL
+            </div>
+            <ul className="space-y-1">
+              <li className="flex items-center space-x-2">
+                <a
+                  href="https://twitter.com/lhrweb"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  Twitter/X
+                </a>
+              </li>
+              <li className="flex items-center space-x-2">
+                <a
+                  href="https://instagram.com/lhrweb"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  Instagram
+                </a>
+              </li>
+              <li className="flex items-center space-x-2">
+                <a
+                  href="https://linkedin.com/company/lhrweb"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  LinkedIn
+                </a>
+              </li>
+              <li className="flex items-center space-x-2">
+                <a
+                  href="https://dribbble.com/lhrweb"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                >
+                  Dribbble
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div className="w-full mb-10 flex flex-wrap flex-col lg:pl-0 lg:mb-0">
+            <div className="text-gray-200 font-light mb-3 text-sm | md:text-base | dark:text-gray-100">
+              Get in touch
+            </div>
             <div className="flex flex-col items-start">
-              <div className="text-gray-200 font-light mb-3 text-sm">
-                Get in touch
-              </div>
               <a
-                href="tel:01942894596"
+                href="tel:+923214516195"
                 target="_blank"
                 className="inline-flex items-center space-x-4 mb-1 text-white text-sm | lg:text-base | lg:dark:hover:text-grayDark-100 | dark:text-grayDark-200"
               >
@@ -595,10 +186,10 @@ const Footer = () => {
                 >
                   <path d="M0 32L144 0l80 144-83.8 67c36.1 68.4 92.3 124.6 160.8 160.8l67-83.8 144 80-32 144h-32C200.6 512 0 311.4 0 64V32z" />
                 </svg>
-                <div className="link text-sm | md:text-base">01942 894 596</div>
+                <div className="link text-sm | md:text-base">+92 321 4516195</div>
               </a>
               <a
-                href="mailto:hello@madebyshape.co.uk"
+                href="mailto:zahid@lhrweb.com"
                 target="_blank"
                 className="inline-flex items-center space-x-4 text-white | lg:dark:hover:text-grayDark-100 | dark:text-grayDark-200"
               >
@@ -612,7 +203,7 @@ const Footer = () => {
                   <path d="M0 64h512v80L256 320 0 144V64zm0 384V182.8l237.9 163.6 18.1 12.4 18.1-12.5L512 182.8V448H0z" />
                 </svg>
                 <div className="link text-sm | md:text-base">
-                  hello@madebyshape.co.uk
+                  zahid@lhrweb.com
                 </div>
               </a>
               <div className="flex space-x-4 mt-6 mb-1 | lg:mb-2">
@@ -627,30 +218,13 @@ const Footer = () => {
                 </svg>
                 <div className="w-full relative ">
                   <p className="text-sm | md:text-base text-white dark:text-grayDark-200 font-sans-primary relative z-10 text-pretty font-light leading-7  mb-6">
-                    MadeByShape
-                    <br />1 Gibfield Park Avenue
+                    LHRWEB Digital
+                    <br />1-C, Block 1, Johar Town
                     <br />
-                    Atherton Manchester
-                    <br />
-                    M46 0SU
+                    Lahore, Pakistan
                   </p>
                 </div>
               </div>
-              <a
-                href="https://what3words.com/topped.little.pirate"
-                target="_blank"
-                className="inline-flex items-center space-x-4 text-white | lg:dark:hover:text-grayDark-100 | dark:text-grayDark-200"
-              >
-                <svg
-                  className="w-3 h-3 fill-current | 4xl:w-3.5 4xl:h-3.5"
-                  viewBox="0 0 11 11"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M10.998 5.5c0 .952.005 1.903-.002 2.854-.005.614-.119 1.2-.51 1.7-.4.512-.924.81-1.564.891a6.95 6.95 0 01-.857.051c-1.8.005-3.599.006-5.398 0-.495-.002-.984-.068-1.425-.318C.564 10.295.167 9.713.055 8.944a5.315 5.315 0 01-.052-.753C0 6.348 0 4.506.003 2.664c0-.532.08-1.05.369-1.513C.762.524 1.33.159 2.057.057a6.29 6.29 0 01.857-.053 930.1 930.1 0 015.424 0c.504.002 1 .072 1.447.332a2.278 2.278 0 011.16 1.725c.036.253.048.51.05.767.006.89.003 1.782.003 2.673zm-2.33-2.029c-.007-.178-.073-.295-.21-.369-.229-.123-.483-.015-.572.248-.24.71-.477 1.42-.715 2.13l-.635 1.898c-.084.251.01.465.234.545.226.081.437-.042.527-.31L8.632 3.62c.02-.056.028-.115.037-.15zm-2.48-.416c-.183 0-.32.102-.387.297l-.547 1.63-.802 2.397c-.074.22-.01.41.167.513.23.134.492.021.587-.258.216-.64.429-1.281.643-1.922.236-.706.473-1.41.707-2.117.093-.278-.088-.539-.368-.54zM2.332 7.528c.01.181.081.3.223.373.224.115.473.003.56-.254.177-.519.35-1.039.523-1.558l.827-2.469c.086-.256-.024-.49-.258-.554-.213-.059-.416.06-.496.296-.45 1.342-.898 2.684-1.346 4.026-.018.052-.025.107-.033.14z" />
-                </svg>
-                <div className="link text-sm | md:text-base"></div>
-              </a>
             </div>
           </div>
         </div>

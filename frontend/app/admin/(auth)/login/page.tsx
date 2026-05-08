@@ -25,7 +25,10 @@ export default function LoginPage() {
       if (!res.ok) throw new Error(data.message);
 
       localStorage.setItem("token", data.token);
-      router.push("/admin"); // protected page
+      localStorage.setItem("role", data.role || "user");
+      localStorage.setItem("permissions", JSON.stringify(data.permissions || []));
+      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+      router.push("/admin");
     } catch (err: any) {
       setError(err.message || "Something went wrong");
     }

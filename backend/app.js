@@ -10,11 +10,9 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 app.use(cors());
-// Allow larger payloads (adjust as needed)
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// app.use("/api/menu", require("./routes/menu"));
 app.use("/public/uploads", express.static("public/uploads"));
 
 const adminAuthRoutes = require("./routes/auth");
@@ -44,10 +42,131 @@ app.use("/api/pages", pageRoutes);
 const sectionRoutes = require("./routes/sections");
 app.use("/api/sections", sectionRoutes);
 
+// ── Normalise a stored page slug to a clean identifier ─────────────────────
+// Old data used URL paths like "/", "/projects", "/secvices" as slugs.
+// New data should use identifiers like "home", "projects", "services".
+const SLUG_NORMALISE = {
+  "/":         "home",
+  "/home":     "home",
+  "/projects": "projects",
+  "/services": "services",
+  "/secvices": "services",   // typo in original data
+  "/about":    "about",
+  "/contact":  "contact",
+  "/blog":     "blog",
+};
+
+function normaliseSlug(raw) {
+  if (!raw) return raw;
+  return SLUG_NORMALISE[raw] || raw.replace(/^\//, "") || raw;
+}
+
+// Standard pages that should always exist in the pages collection
+const STANDARD_PAGES = [
+  { name: "Home",     slug: "home" },
+  { name: "Services", slug: "services" },
+  { name: "Projects", slug: "projects" },
+  { name: "About",    slug: "about" },
+  { name: "Contact",  slug: "contact" },
+  { name: "Blog",     slug: "blog" },
+];
+
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log("MongoDB connected");
+
+    const db       = mongoose.connection;
+    const sections = db.collection("sections");
+    const pages    = db.collection("pages");
+
+    // ── 1. Drop the old single-field unique index on sections.key ────────
+    try {
+      await sections.dropIndex("key_1");
+      console.log("Dropped old sections.key_1 index");
+    } catch (_) { /* already gone */ }
+
+    // ── 2. Fix page slugs in the pages collection ─────────────────────────
+    const allPages = await pages.find({}).toArray();
+    for (const p of allPages) {
+      const fixed = normaliseSlug(p.slug);
+      if (fixed !== p.slug) {
+        await pages.updateOne({ _id: p._id }, { $set: { slug: fixed } });
+        console.log(`Fixed page slug: "${p.slug}" → "${fixed}"`);
+      }
+      // Also normalise the name field (e.g. "home" → "Home")
+      const niceName = fixed.charAt(0).toUpperCase() + fixed.slice(1);
+      if (p.name !== niceName) {
+        await pages.updateOne({ _id: p._id }, { $set: { name: niceName } });
+      }
+    }
+
+    // ── 3. Ensure all standard pages exist ────────────────────────────────
+    for (const sp of STANDARD_PAGES) {
+      const exists = await pages.findOne({ slug: sp.slug });
+      if (!exists) {
+        await pages.insertOne({ name: sp.name, slug: sp.slug, description: "", createdAt: new Date(), updatedAt: new Date(), __v: 0 });
+        console.log(`Created missing page: ${sp.slug}`);
+      }
+    }
+
+    // ── 4. Ensure admin@lhrweb.com always exists with role=admin ────────
+    const bcryptJs = require("bcryptjs");
+    const users = db.collection("users");
+    const adminUser = await users.findOne({ email: "admin@lhrweb.com" });
+    if (adminUser) {
+      if (adminUser.role !== "admin") {
+        await users.updateOne({ email: "admin@lhrweb.com" }, { $set: { role: "admin", permissions: [] } });
+        console.log("Set admin@lhrweb.com role to admin");
+      }
+    } else {
+      const hashed = await bcryptJs.hash("Admin@123", 10);
+      await users.insertOne({
+        name: "Admin",
+        email: "admin@lhrweb.com",
+        password: hashed,
+        role: "admin",
+        permissions: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        __v: 0,
+      });
+      console.log("Created admin account: admin@lhrweb.com / Admin@123");
+    }
+
+    // ── 5. Migrate sections: pages[] → page, and normalise page slug ──────
+    const allSections = await sections.find({}).toArray();
+    for (const s of allSections) {
+      const updates = {};
+
+      // Migrate old pages[] array
+      if (!s.page && Array.isArray(s.pages) && s.pages.length > 0) {
+        updates.page  = normaliseSlug(s.pages[0]);
+        updates.pages = undefined;
+      }
+
+      // Normalise page slug if it looks like a URL path
+      const currentPage = updates.page || s.page;
+      if (currentPage) {
+        const normalised = normaliseSlug(currentPage);
+        if (normalised !== currentPage) updates.page = normalised;
+      }
+
+      if (Object.keys(updates).length) {
+        const setFields   = {};
+        const unsetFields = {};
+        for (const [k, v] of Object.entries(updates)) {
+          if (v === undefined) unsetFields[k] = "";
+          else setFields[k] = v;
+        }
+        const op = {};
+        if (Object.keys(setFields).length)   op.$set   = setFields;
+        if (Object.keys(unsetFields).length) op.$unset = unsetFields;
+        await sections.updateOne({ _id: s._id }, op);
+        console.log(`Fixed section "${s.name}": page → "${updates.page || s.page}"`);
+      }
+    }
+
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => console.error(err));

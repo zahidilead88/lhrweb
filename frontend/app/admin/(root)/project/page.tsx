@@ -1,93 +1,131 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function AdminSlidesPage() {
-  const [slides, setSlides] = useState([]);
+interface Project {
+  _id: string;
+  title: string;
+  shortDescription: string;
+  image: string;
+  tags?: string[];
+  buttonText?: string;
+}
+
+export default function ManageProjectsPage() {
   const router = useRouter();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [search, setSearch]     = useState("");
+  const [loading, setLoading]   = useState(true);
 
-  const fetchSlides = async () => {
-    const res = await fetch("http://localhost:8000/api/projects");
-    const data = await res.json();
-    setSlides(data);
+  const load = () => {
+    setLoading(true);
+    fetch("http://localhost:8000/api/projects")
+      .then((r) => r.json())
+      .then((data) => setProjects(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
-  useEffect(() => {
-    fetchSlides();
-  }, []);
+  useEffect(() => { load(); }, []);
 
-  const handleEdit = (id: string) => {
-    router.push(`/admin/project/edit/${id}`);
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    await fetch(`http://localhost:8000/api/projects/${id}`, { method: "DELETE" });
+    setProjects((prev) => prev.filter((p) => p._id !== id));
   };
 
-  const handleDelete = async (id: string) => {
-    const confirmDelete = confirm(
-      "Are you sure you want to delete this slide?"
-    );
-    if (!confirmDelete) return;
-
-    const res = await fetch(`http://localhost:8000/api/projects/${id}`, {
-      method: "DELETE",
-    });
-
-    if (res.ok) {
-      setSlides((prev) => prev.filter((slide: any) => slide._id !== id));
-    } else {
-      alert("Failed to delete slide");
-    }
-  };
+  const filtered = projects.filter((p) =>
+    p.title.toLowerCase().includes(search.toLowerCase()) ||
+    p.shortDescription?.toLowerCase().includes(search.toLowerCase()) ||
+    (p.tags || []).some((t) => t.toLowerCase().includes(search.toLowerCase()))
+  );
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">Slides</h1>
-        <button
-          onClick={() => router.push("/admin/project/add")}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Add Slide
-        </button>
+    <div className="p-8">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="relative flex-1 max-w-xs">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <input
+            className="pl-9 pr-3 py-2 border rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-black/10"
+            placeholder="Search projects…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="ml-auto">
+          <Link
+            href="/admin/project/add"
+            className="bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
+          >
+            + Add Project
+          </Link>
+        </div>
       </div>
 
-      {slides.length === 0 ? (
-        <p>No slides found.</p>
+      {/* Table */}
+      {loading ? (
+        <p className="text-gray-400 text-center mt-20">Loading…</p>
+      ) : filtered.length === 0 ? (
+        <p className="text-gray-400 text-center mt-20">{search ? "No projects match your search." : "No projects yet."}</p>
       ) : (
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {slides.map((slide: any) => (
-            <div
-              key={slide._id}
-              className="border rounded-lg shadow p-4 bg-white"
-            >
-              <img
-                src={`http://localhost:8000/${slide.image}`}
-                alt={slide.title}
-                className="w-full h-48 object-cover rounded mb-3"
-              />
-              <h2 className="text-lg font-semibold mb-1">{slide.title}</h2>
-              <p className="text-sm text-gray-500 mb-2">
-                Button: {slide.buttonText}
-              </p>
-              <p className="text-sm text-gray-500 mb-2">
-                {slide.shortDescription}
-              </p>
-              <p className="text-sm text-gray-500 mb-2">{slide.description}</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(slide._id)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(slide._id)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left px-4 py-3 font-semibold text-gray-700 w-14"></th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-700">Title</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-700 hidden md:table-cell">Description</th>
+                <th className="text-left px-4 py-3 font-semibold text-gray-700 hidden lg:table-cell">Categories</th>
+                <th className="text-right px-4 py-3 font-semibold text-gray-700">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map((project) => (
+                <tr key={project._id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <img
+                      src={`http://localhost:8000/${project.image}`}
+                      alt={project.title}
+                      className="w-10 h-10 rounded-lg object-cover"
+                    />
+                  </td>
+                  <td className="px-4 py-3 font-medium">{project.title}</td>
+                  <td className="px-4 py-3 text-gray-500 hidden md:table-cell max-w-xs truncate">{project.shortDescription}</td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    <div className="flex flex-wrap gap-1">
+                      {(project.tags || []).length > 0 ? project.tags!.map((t) => (
+                        <span key={t} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{t}</span>
+                      )) : <span className="text-xs text-gray-300">—</span>}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <Link
+                        href={`/admin/project/edit/${project._id}`}
+                        className="text-xs px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(project._id, project.title)}
+                        className="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 text-xs text-gray-400">
+            {filtered.length} of {projects.length} project{projects.length !== 1 ? "s" : ""}
+          </div>
         </div>
       )}
     </div>

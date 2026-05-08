@@ -3,8 +3,9 @@ const mongoose = require("mongoose");
 const blogSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
-  thumbnail: { type: String }, // ✅ Thumbnail image
-  fullImage: { type: String }, // ✅ Full-size image
+  thumbnail: { type: String },
+  fullImage: { type: String },
+  tags: { type: [String], default: [] },
   createdAt: {
     type: Date,
     default: Date.now,

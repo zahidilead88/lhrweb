@@ -26,12 +26,14 @@ router.get("/:id", async (req, res) => {
 // POST add new project with image
 router.post("/", upload.single("image"), async (req, res) => {
   try {
-    const { title, shortDescription, description, buttonText } = req.body;
+    const { title, shortDescription, description, buttonText, tags, videoUrl } = req.body;
     const image = req.file?.path;
 
     if (!title || !shortDescription || !image || !buttonText) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+
+    const processedTags = typeof tags === "string" ? tags.split(",").map(t => t.trim()) : tags;
 
     const project = await Project.create({
       title,
@@ -39,6 +41,8 @@ router.post("/", upload.single("image"), async (req, res) => {
       description,
       image,
       buttonText,
+      tags: processedTags,
+      videoUrl,
     });
 
     res.status(201).json(project);
@@ -54,7 +58,7 @@ const path = require("path");
 
 router.put("/:id", upload.single("image"), async (req, res) => {
   try {
-    const { title, buttonText } = req.body;
+    const { title, buttonText, tags, videoUrl, shortDescription, description } = req.body;
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: "Not found" });
 
@@ -64,8 +68,16 @@ router.put("/:id", upload.single("image"), async (req, res) => {
       fs.existsSync(oldPath) && fs.unlinkSync(oldPath);
     }
 
-    project.title = title;
-    project.buttonText = buttonText;
+    project.title = title || project.title;
+    project.buttonText = buttonText || project.buttonText;
+    project.shortDescription = shortDescription || project.shortDescription;
+    project.description = description || project.description;
+    project.videoUrl = videoUrl || project.videoUrl;
+
+    if (tags) {
+      project.tags = typeof tags === "string" ? tags.split(",").map(t => t.trim()) : tags;
+    }
+
     if (req.file) {
       project.image = `public/uploads/${req.file.filename}`;
     }

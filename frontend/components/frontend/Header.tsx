@@ -33,7 +33,7 @@ const Header = () => {
 
   return (
     <div
-      className={`flex items-center justify-between p-3  rounded-2xl text-center sticky top-3 transition-all duration-300 z-50
+      className={`flex items-center justify-between p-3 rounded-2xl text-center sticky top-3 transition-all duration-300 z-50
         ${isScrolled ? "w-[80vw] bg-white/50 backdrop-blur-md" : "w-[98vw]"}
         ${isVisible ? "translate-y-0" : "-translate-y-[120%]"} 
         mx-auto transform`}

@@ -11,20 +11,22 @@ router.post(
     { name: "fullImage", maxCount: 1 },
   ]),
   async (req, res) => {
-    const { title, content } = req.body;
+    const { title, content, tags } = req.body;
 
-    if (!title || !content || !req.files) {
+    if (!title || !content) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
     const thumbnail = req.files?.thumbnail?.[0]?.path;
     const fullImage = req.files?.fullImage?.[0]?.path;
+    const processedTags = typeof tags === "string" ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
 
     const blog = await Blog.create({
       title,
       content,
       thumbnail,
       fullImage,
+      tags: processedTags,
     });
 
     res.status(201).json(blog);
@@ -55,10 +57,11 @@ router.get("/:id", async (req, res) => {
 // PUT /api/blogs/:id - Update blog
 router.put("/:id", async (req, res) => {
   try {
-    const { title, content } = req.body;
+    const { title, content, tags } = req.body;
+    const processedTags = typeof tags === "string" ? tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined;
     const updated = await Blog.findByIdAndUpdate(
       req.params.id,
-      { title, content },
+      { title, content, ...(processedTags !== undefined && { tags: processedTags }) },
       { new: true }
     );
 

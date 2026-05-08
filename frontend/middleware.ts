@@ -5,15 +5,16 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
-  const isAuthPage = pathname.startsWith("/admin");
+  const isAuthPage =
+    pathname === "/admin/login" || pathname === "/admin/register";
 
-  // If trying to access protected /admin routes without token, redirect
+  // Redirect unauthenticated users away from protected admin routes
   if (pathname.startsWith("/admin") && !token && !isAuthPage) {
     const loginUrl = new URL("/admin/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  // If logged in and trying to access login/register page, redirect to dashboard
+  // Redirect already-authenticated users away from login/register
   if (isAuthPage && token) {
     const dashboardUrl = new URL("/admin", request.url);
     return NextResponse.redirect(dashboardUrl);
@@ -21,3 +22,7 @@ export function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
+
+export const config = {
+  matcher: ["/admin/:path*"],
+};

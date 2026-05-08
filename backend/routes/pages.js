@@ -30,6 +30,26 @@ router.post("/", async (req, res) => {
   }
 });
 
+// Update a page
+router.put("/:id", async (req, res) => {
+  try {
+    const { name, slug, description } = req.body;
+    const page = await Page.findByIdAndUpdate(
+      req.params.id,
+      { name, slug, description },
+      { new: true }
+    );
+    if (!page) return res.status(404).json({ message: "Page not found" });
+    res.json(page);
+  } catch (err) {
+    if (err.code === 11000) {
+      res.status(400).json({ message: "Slug must be unique" });
+    } else {
+      res.status(400).json({ message: "Failed to update page" });
+    }
+  }
+});
+
 // Delete a page
 router.delete("/:id", async (req, res) => {
   try {

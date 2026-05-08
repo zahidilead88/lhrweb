@@ -1,66 +1,110 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Image from "next/image";
+import React, { useEffect, useState, useMemo } from "react";
+import ProjectCard from "@/components/frontend/home/ProjectCard";
+import PageSections from "@/components/frontend/PageSections";
 
-interface ProjectSlide {
+interface Project {
+  _id: string;
   image: string;
   title: string;
+  shortDescription: string;
+  tags?: string[];
+  videoUrl?: string;
   buttonText?: string;
 }
 
-const Projects = () => {
-  const [slides, setSlides] = useState<ProjectSlide[]>([]);
+export default function ProjectsPage() {
+  const [projects, setProjects]         = useState<Project[]>([]);
+  const [activeCategory, setActive]     = useState("all");
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const res = await fetch("http://localhost:8000/api/projects");
-        const data: ProjectSlide[] = await res.json();
-        setSlides(data);
-      } catch (err) {
-        console.error("Failed to load projects", err);
-      }
-    };
-
-    fetchProjects();
+    fetch("http://localhost:8000/api/projects")
+      .then((r) => r.json())
+      .then((data: Project[]) => setProjects(Array.isArray(data) ? data : []))
+      .catch(() => {});
   }, []);
+
+  // Build category list from tags across all projects
+  const categories = useMemo(() => {
+    const counts: Record<string, number> = {};
+    projects.forEach((p) => {
+      (p.tags || []).forEach((tag) => {
+        const t = tag.trim().toLowerCase();
+        if (t) counts[t] = (counts[t] || 0) + 1;
+      });
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [projects]);
+
+  const filtered = useMemo(() => {
+    if (activeCategory === "all") return projects;
+    return projects.filter((p) =>
+      (p.tags || []).some((t) => t.trim().toLowerCase() === activeCategory)
+    );
+  }, [projects, activeCategory]);
+
   return (
-    <div className="p-5">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="w-2 h-2 rounded-full bg-black block"></span>
-        <h1 className="text-sm">Our Work</h1>
-      </div>
-      <h2 className="text-4xl">
-        Take a look <br /> at our projects
-      </h2>
-      <div className="flex flex-wrap">
-        {[...slides, ...slides].map((slide, i) => (
-          <div
-            key={i}
-            className="w-[500px] first:w-[70%] h-auto flex-shrink-0 m-2 bg-white rounded-lg overflow-hidden relative"
-          >
-            <Image
-              src={`http://localhost:8000/${slide.image}`}
-              alt={slide.title}
-              width={500}
-              height={400}
-              className="w-full max-h-[400px] object-cover"
-            />
-            <div className="p-4 text-center">
-              <div className="relative z-10">
-                <h3 className="text-xl font-semibold mb-2">{slide.title}</h3>
-                <button className="mt-2 px-6 py-2 bg-black text-white rounded hover:bg-black/80 transition">
-                  {slide.buttonText || "Learn More"}
-                </button>
+    <>
+      <PageSections page="projects" />
+
+      <div className="px-6 md:px-10 lg:px-20 pb-20">
+
+        {/* Category filter bar */}
+        {projects.length > 0 && (
+          <div className="py-10 border-b border-gray-100 mb-10">
+            <div className="flex items-start gap-6">
+              {/* Label */}
+              <div className="flex items-center gap-2 pt-1 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-black" />
+                <span className="text-sm text-gray-500 whitespace-nowrap">Our Work</span>
               </div>
-              <div className="w-full h-[100%] bg-white absolute top-0 bottom-0 blur-2xl z-0"></div>
+
+              {/* Scrollable filter tags */}
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                {/* "Explore all" */}
+                <button
+                  type="button"
+                  onClick={() => setActive("all")}
+                  className={`text-2xl md:text-3xl font-bold transition-colors leading-none ${
+                    activeCategory === "all" ? "text-black" : "text-gray-300 hover:text-gray-500"
+                  }`}
+                >
+                  explore all
+                  <sub className="text-sm font-normal ml-0.5">{projects.length}</sub>
+                </button>
+
+                {categories.map(([tag, count]) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setActive(tag)}
+                    className={`text-2xl md:text-3xl font-bold transition-colors leading-none ${
+                      activeCategory === tag ? "text-black" : "text-gray-300 hover:text-gray-500"
+                    }`}
+                  >
+                    {tag}
+                    <sub className="text-sm font-normal ml-0.5">{count}</sub>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+        )}
 
-export default Projects;
+        {/* Projects grid */}
+        <section>
+          <ul className="grid gap-[25px_14px] md:gap-[40px_20px] grid-cols-2 lg:grid-cols-3 items-start">
+            {filtered.map((project, index) => (
+              <ProjectCard key={project._id} project={project} index={index} />
+            ))}
+          </ul>
+
+          {filtered.length === 0 && (
+            <p className="text-center text-gray-400 py-20">No projects in this category yet.</p>
+          )}
+        </section>
+      </div>
+    </>
+  );
+}
