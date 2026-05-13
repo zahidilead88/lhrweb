@@ -35,6 +35,8 @@ export interface SectionFields {
   autoContent?:      string;
   /** When true, show a blog-post picker instead of free-form accordion items */
   blogPicker?:       boolean;
+  /** When true, show a project picker instead of free-form accordion items */
+  projectPicker?:    boolean;
 }
 
 export interface SectionType {
@@ -425,6 +427,46 @@ export const SECTION_TYPES: SectionType[] = [
     },
   },
   {
+    key:         "pricing",
+    label:       "Pricing Plans",
+    group:       "Generic",
+    description: "Toggle between Subscription and Project pricing with feature lists",
+    fields: {
+      title: {
+        label:       "Subscriptions heading",
+        placeholder: "e.g. Subscriptions are like having an in-house creative department.",
+        hint:        "Shown when the toggle is set to Subscriptions",
+      },
+      shortDescription: {
+        label:       "Projects heading",
+        placeholder: "e.g. One-off projects, delivered end to end.",
+        hint:        "Shown when the toggle is set to Projects",
+      },
+      description: {
+        label:       "\"Build your own\" card text",
+        placeholder: "e.g. Build your own plan. We'll tailor the perfect team.",
+        hint:        "Shown in the last card on the right",
+      },
+      button: true,
+      accordion: {
+        label:            "Pricing plans",
+        hint:             "Each item is one pricing card. Type must be \"subscription\" or \"project\".",
+        titleLabel:       "Plan name",
+        titlePlaceholder: "e.g. Part-time Pro",
+        subFields: [
+          { label: "Type",        placeholder: "subscription  or  project" },
+          { label: "Badge",       placeholder: "e.g. Most Popular  (leave blank for none)" },
+          { label: "Price",       placeholder: "e.g. 10200  (numbers only, no $)" },
+          { label: "Period",      placeholder: "e.g. /month  or  /project  or  one-time" },
+          { label: "Description", placeholder: "e.g. One part-time creative for ongoing projects." },
+          { label: "Features (separate each with ;)", placeholder: "e.g. Dedicated creative, 20 hrs weekly;Two ongoing tasks;Multiple revisions", multiline: true },
+          { label: "Button text", placeholder: "e.g. Subscribe now" },
+          { label: "Note below button (optional)", placeholder: "e.g. Need more info? Let's chat." },
+        ],
+      },
+    },
+  },
+  {
     key:         "cta",
     label:       "CTA Banner",
     group:       "Generic",
@@ -441,6 +483,105 @@ export const SECTION_TYPES: SectionType[] = [
         hint:        "Small pill text shown above the heading",
       },
       button:  true,
+    },
+  },
+  {
+    key:         "contact-form",
+    label:       "Contact Form",
+    group:       "Generic",
+    description: "Full-width contact section with form and sidebar contact info",
+    fields: {
+      autoContent: "This component is a fixed form. No content to fill in.",
+    },
+  },
+  {
+    key:         "projects-listing",
+    label:       "Projects Listing (Full)",
+    group:       "Generic",
+    description: "Full-page projects grid with category filters",
+    fields: {
+      autoContent: "This section pulls all projects automatically with category filters.",
+    },
+  },
+  {
+    key:         "blog-listing",
+    label:       "Blog Listing (Full)",
+    group:       "Generic",
+    description: "Full-page blog grid with category filters",
+    fields: {
+      autoContent: "This section pulls all blog posts automatically with category filters.",
+    },
+  },
+  {
+    key:         "brand-features",
+    label:       "Brand Features",
+    group:       "Home",
+    description: "4-card feature grid with badge, heading, and description — highlights key capabilities",
+    fields: {
+      shortDescription: {
+        label:       "Badge text",
+        placeholder: "e.g. Limitless customization",
+        hint:        "Shown in a small pill above the heading",
+      },
+      title: {
+        label:       "Section heading",
+        placeholder: "e.g. Match your website to your brand",
+      },
+      description: {
+        label:       "Subtitle paragraph",
+        placeholder: "e.g. Our tools make it easy to bend your website to your brand.",
+      },
+      accordion: {
+        label:            "Feature cards",
+        hint:             "Each item is one feature card. Description and image URL are joined with \"|\" in the content field.",
+        titleLabel:       "Card title",
+        titlePlaceholder: "e.g. Write like a pro",
+        contentLabel:     "Description | Image URL (separated by |)",
+        contentPlaceholder: "e.g. AI creates unique copy for your website.|uploads/feature1.jpg",
+      },
+    },
+  },
+  {
+    key:         "conversion-section",
+    label:       "Conversion Steps",
+    group:       "Home",
+    description: "Interactive 1-2-3 steps with images and a CTA button",
+    fields: {
+      autoContent: "This component currently uses hardcoded Shopify-style steps. (Future: make editable)",
+    },
+  },
+  {
+    key:         "featured-projects",
+    label:       "Featured Projects",
+    group:       "Generic",
+    description: "Grid of hand-picked projects showcase",
+    fields: {
+      title: {
+        label:       "Section heading",
+        placeholder: "e.g. Featured Work",
+      },
+      shortDescription: {
+        label:       "Subtitle",
+        placeholder: "e.g. Selected projects we're proud of",
+      },
+      projectPicker: true,
+    },
+  },
+  {
+    key:         "featured-blogs",
+    label:       "Featured Blogs",
+    group:       "Generic",
+    description: "Grid of hand-picked blog posts",
+    fields: {
+      title: {
+        label:       "Section heading",
+        placeholder: "e.g. Latest Insights",
+      },
+      shortDescription: {
+        label:       "Subtitle",
+        placeholder: "e.g. Thinking and news from our team",
+      },
+      blogPicker: true,
     },
   },
 ];

@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Titillium_Web } from "next/font/google";
+import { Inter, Titillium_Web } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { ReduxProvider } from "@/store/ReduxProvider";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+});
 
 const titilliumWeb = Titillium_Web({
-  variable: "--titilliumWeb",
+  variable: "--font-titilliumWeb",
   weight: "400",
+  subsets: ["latin"],
 });
 
 const AlmiregoDisplay = localFont({
@@ -33,8 +40,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${titilliumWeb.variable} ${AlmiregoDisplay.variable}`}>
-        {children}
+      <body className={`${inter.variable} ${titilliumWeb.variable} ${AlmiregoDisplay.variable} font-inter font-light antialiased`}>
+        <ReduxProvider>{children}</ReduxProvider>
       </body>
     </html>
   );

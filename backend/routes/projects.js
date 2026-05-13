@@ -89,6 +89,22 @@ router.put("/:id", upload.single("image"), async (req, res) => {
   }
 });
 
+// PUT /api/projects/:id/blocks — save block editor content
+router.put("/:id/blocks", async (req, res) => {
+  try {
+    const { blocks } = req.body;
+    if (!Array.isArray(blocks)) return res.status(400).json({ message: "blocks must be an array" });
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: "Not found" });
+    project.blocks = blocks;
+    await project.save();
+    res.json(project);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to save blocks" });
+  }
+});
+
 // DELETE /api/projects/:id
 router.delete("/:id", async (req, res) => {
   try {

@@ -99,6 +99,23 @@ router.put(
   }
 );
 
+// PUT update name, enabled, order, blocks (JSON — no image upload)
+router.put("/:id/blocks", async (req, res) => {
+  try {
+    const { name, enabled, order, blocks } = req.body;
+    const update = {};
+    if (name !== undefined) update.name = name;
+    if (typeof enabled === "boolean") update.enabled = enabled;
+    if (typeof order === "number") update.order = order;
+    if (Array.isArray(blocks)) update.blocks = blocks;
+    const section = await Section.findByIdAndUpdate(req.params.id, { $set: update }, { new: true });
+    if (!section) return res.status(404).json({ message: "Section not found" });
+    res.json(section);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update section" });
+  }
+});
+
 // DELETE section
 router.delete("/:id", async (req, res) => {
   try {

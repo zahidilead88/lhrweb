@@ -1,5 +1,5 @@
 import React from "react";
-import ConversionSection from "@/components/frontend/home/ConversionSection";
+import ConversionSection from "@/components/frontend/sections/ConversionSection";
 
 const Footer = () => {
   return (
@@ -8,17 +8,17 @@ const Footer = () => {
 
       
 
-      <div className="w-full bg-black overflow-hidden">
+      <div className="w-full bg-black site-footer overflow-hidden transition-colors duration-500">
         <div className="w-full grid grid-cols-4 p-20 justify-between relative z-30">
           <div className="relative z-20">
-            <div className="text-gray-200 font-light mb-3 text-sm | md:text-base | dark:text-gray-100">
+            <div className="text-gray-400 font-light mb-3 text-sm | md:text-base">
               SITEMAP
             </div>
             <ul className="space-y-1">
               <li className="flex items-center space-x-2">
                 <a
                   href="/"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Home
                 </a>
@@ -26,7 +26,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/projects"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Work
                 </a>
@@ -34,7 +34,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/about"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Agency
                 </a>
@@ -42,7 +42,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/services"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Services
                 </a>
@@ -50,7 +50,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/blog"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Journal
                 </a>
@@ -58,7 +58,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/tools"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Tools
                 </a>
@@ -66,7 +66,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/contact"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Start a Project
                 </a>
@@ -81,7 +81,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/services#brand-design"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Brand Design
                 </a>
@@ -89,7 +89,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/services#illustration"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Illustration
                 </a>
@@ -97,7 +97,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/services#web-design"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Web Design
                 </a>
@@ -105,7 +105,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/services#product-design"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Product Design
                 </a>
@@ -113,7 +113,7 @@ const Footer = () => {
               <li className="flex items-center space-x-2">
                 <a
                   href="/services#print-packaging"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Print & Packaging
                 </a>
@@ -130,7 +130,7 @@ const Footer = () => {
                   href="https://twitter.com/lhrweb"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Twitter/X
                 </a>
@@ -140,7 +140,7 @@ const Footer = () => {
                   href="https://instagram.com/lhrweb"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Instagram
                 </a>
@@ -150,7 +150,7 @@ const Footer = () => {
                   href="https://linkedin.com/company/lhrweb"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   LinkedIn
                 </a>
@@ -160,7 +160,7 @@ const Footer = () => {
                   href="https://dribbble.com/lhrweb"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-white relative link text-sm | md:text-base |  | dark:text-gray-200 lg:dark:hover:text-gray-100 || group"
+                  className="text-white relative link text-sm | md:text-base || group"
                 >
                   Dribbble
                 </a>
@@ -168,14 +168,14 @@ const Footer = () => {
             </ul>
           </div>
           <div className="w-full mb-10 flex flex-wrap flex-col lg:pl-0 lg:mb-0">
-            <div className="text-gray-200 font-light mb-3 text-sm | md:text-base | dark:text-gray-100">
+            <div className="text-gray-400 font-light mb-3 text-sm | md:text-base">
               Get in touch
             </div>
             <div className="flex flex-col items-start">
               <a
                 href="tel:+923214516195"
                 target="_blank"
-                className="inline-flex items-center space-x-4 mb-1 text-white text-sm | lg:text-base | lg:dark:hover:text-grayDark-100 | dark:text-grayDark-200"
+                className="inline-flex items-center space-x-4 mb-1 text-white text-sm | lg:text-base"
               >
                 <svg
                   className="w-3 h-3 fill-current | 4xl:w-3.5 4xl:h-3.5"
@@ -191,7 +191,7 @@ const Footer = () => {
               <a
                 href="mailto:zahid@lhrweb.com"
                 target="_blank"
-                className="inline-flex items-center space-x-4 text-white | lg:dark:hover:text-grayDark-100 | dark:text-grayDark-200"
+                className="inline-flex items-center space-x-4 text-white"
               >
                 <svg
                   className="w-3 h-3 fill-current | 4xl:w-3.5 4xl:h-3.5"
@@ -208,7 +208,7 @@ const Footer = () => {
               </a>
               <div className="flex space-x-4 mt-6 mb-1 | lg:mb-2">
                 <svg
-                  className="w-3 h-3 fill-current text-white mt-1 | dark:text-grayDark-200 4xl:w-3.5 4xl:h-3.5"
+                  className="w-3 h-3 fill-current mt-1 | 4xl:w-3.5 4xl:h-3.5"
                   width={12}
                   height={16}
                   xmlns="http://www.w3.org/2000/svg"
@@ -217,7 +217,7 @@ const Footer = () => {
                   <path d="M192 512s192-208 192-320C384 86 298 0 192 0S0 86 0 192c0 112 192 320 192 320zm0-384a64 64 0 110 128 64 64 0 110-128z" />
                 </svg>
                 <div className="w-full relative ">
-                  <p className="text-sm | md:text-base text-white dark:text-grayDark-200 font-sans-primary relative z-10 text-pretty font-light leading-7  mb-6">
+                  <p className="text-sm | md:text-base text-white font-sans-primary relative z-10 text-pretty font-light leading-7  mb-6">
                     LHRWEB Digital
                     <br />1-C, Block 1, Johar Town
                     <br />
@@ -251,13 +251,13 @@ const Footer = () => {
               ry="1.31"
             />
           </svg> */}
-            <div className="inline-flex flex-row text-gray-200 w-auto text-1xs | md:text-xs | lg:text-sm | dark:text-grayDark-200">
+            <div className="inline-flex flex-row text-gray-400 w-auto text-1xs | md:text-xs | lg:text-sm">
               <div>© Made By LHRWEB Ltd 2025</div>
               {/* <div className="mx-2 | lg:mx-5">|</div>
               <div>Company Reg Number 10529058</div> */}
             </div>
           </div>
-          <div className="inline-flex flex-row text-gray-200 w-auto text-1xs | md:text-xs | lg:text-sm | dark:text-grayDark-200">
+          <div className="inline-flex flex-row text-gray-400 w-auto text-1xs | md:text-xs | lg:text-sm">
             <a
               href="https://www.lhrweb.com/"
               className="link | xl:hover:text-white | lg:dark:hover:text-grayDark-100"

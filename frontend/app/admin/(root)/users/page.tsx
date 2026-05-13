@@ -15,6 +15,7 @@ const ALL_PERMISSIONS = [
   { key: "blog",     label: "Blog" },
   { key: "projects", label: "Projects" },
   { key: "menu",     label: "Menu" },
+  { key: "services", label: "Services" },
 ];
 
 const emptyForm = { name: "", email: "", password: "", role: "user" as "admin" | "user", permissions: [] as string[] };
@@ -92,33 +93,31 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="p-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <div className="flex items-end justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold">Users</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Admins have full access. Assign specific permissions to regular users.
-          </p>
+          <h1 className="admin-heading">Team</h1>
+          <p className="admin-subtext">Manage user roles and granular access permissions for your team.</p>
         </div>
         <button
           onClick={openAdd}
-          className="bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
+          className="admin-button-primary"
         >
-          + Add User
+          <span className="text-lg leading-none">+</span> Add User
         </button>
       </div>
 
       {/* Modal form */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg">
-            <h2 className="text-xl font-bold mb-5">{editing ? `Edit: ${editing.name}` : "New User"}</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl p-10 w-full max-w-xl border border-gray-100 animate-in zoom-in-95 duration-200">
+            <h2 className="text-2xl font-bold mb-8 text-gray-900">{editing ? `Edit ${editing.name}` : "New User"}</h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Name <span className="text-red-500">*</span></label>
+                  <label className="admin-label">Full Name</label>
                   <input
-                    className="border px-3 py-2 w-full rounded-lg text-sm"
+                    className="admin-input"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="e.g. John Smith"
@@ -126,10 +125,10 @@ export default function UsersPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Email <span className="text-red-500">*</span></label>
+                  <label className="admin-label">Email Address</label>
                   <input
                     type="email"
-                    className="border px-3 py-2 w-full rounded-lg text-sm"
+                    className="admin-input"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder="john@example.com"
@@ -138,80 +137,85 @@ export default function UsersPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold mb-1">
-                    Password {editing && <span className="font-normal text-gray-400">(leave blank to keep)</span>}
-                    {!editing && <span className="text-red-500"> *</span>}
+                  <label className="admin-label">
+                    Password {editing && <span className="font-normal lowercase">(Optional)</span>}
                   </label>
                   <input
                     type="password"
-                    className="border px-3 py-2 w-full rounded-lg text-sm"
+                    className="admin-input"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder={editing ? "••••••••" : "Min 6 characters"}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Role</label>
+                  <label className="admin-label">Access Role</label>
                   <select
-                    className="border px-3 py-2 w-full rounded-lg text-sm bg-white"
+                    className="admin-select font-bold"
                     value={form.role}
                     onChange={(e) => setForm({ ...form, role: e.target.value as "admin" | "user" })}
                   >
-                    <option value="user">User</option>
-                    <option value="admin">Admin (full access)</option>
+                    <option value="user">Restricted User</option>
+                    <option value="admin">Full Administrator</option>
                   </select>
                 </div>
               </div>
 
               {/* Permissions — only shown for non-admin role */}
               {form.role === "user" && (
-                <div>
-                  <label className="block text-sm font-semibold mb-2">
-                    Access permissions
-                    <span className="font-normal text-gray-400 ml-1">— which areas can this user manage?</span>
+                <div className="space-y-4 pt-2">
+                  <label className="admin-label">
+                    Granular Permissions
                   </label>
-                  <div className="grid grid-cols-2 gap-2 border rounded-xl p-4 bg-gray-50">
+                  <div className="grid grid-cols-2 gap-3 p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100">
                     {ALL_PERMISSIONS.map((p) => (
-                      <label key={p.key} className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={form.permissions.includes(p.key)}
-                          onChange={() => togglePermission(p.key)}
-                          className="w-4 h-4 accent-black"
-                        />
-                        <span className="text-sm">{p.label}</span>
+                      <label key={p.key} className="flex items-center gap-3 cursor-pointer group select-none">
+                        <div className={`w-5 h-5 rounded-lg border flex items-center justify-center transition-all ${
+                          form.permissions.includes(p.key) 
+                            ? "bg-black border-black text-white" 
+                            : "bg-white border-gray-200 group-hover:border-gray-400"
+                        }`}>
+                          <input
+                            type="checkbox"
+                            checked={form.permissions.includes(p.key)}
+                            onChange={() => togglePermission(p.key)}
+                            className="hidden"
+                          />
+                          {form.permissions.includes(p.key) && <span className="text-[10px]">✓</span>}
+                        </div>
+                        <span className="text-[13px] font-medium text-gray-600">{p.label}</span>
                       </label>
                     ))}
                   </div>
-                  {form.permissions.length === 0 && (
-                    <p className="text-xs text-amber-600 mt-1">No permissions selected — this user can only log in but not edit anything.</p>
-                  )}
                 </div>
               )}
 
               {form.role === "admin" && (
-                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-                  <span>ℹ️</span>
-                  <span>Admins have full access to everything — no permission restrictions apply.</span>
+                <div className="p-5 bg-blue-50/50 border border-blue-100 rounded-[2rem] text-[12px] text-blue-700 font-medium leading-relaxed">
+                  Administrators have unrestricted access to all modules and system settings.
                 </div>
               )}
 
-              {error && <p className="text-red-600 text-sm">{error}</p>}
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-[13px] text-red-600 font-medium animate-in slide-in-from-top-1">
+                  {error}
+                </div>
+              )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-4 pt-8">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="bg-black text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50"
+                  className="flex-1 admin-button-primary py-4 rounded-2xl"
                 >
-                  {saving ? "Saving…" : editing ? "Save Changes" : "Create User"}
+                  {saving ? "Saving..." : editing ? "Update User" : "Create User"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="px-5 py-2 rounded-lg text-sm border hover:bg-gray-50"
+                  className="admin-button-secondary py-4 rounded-2xl border-0"
                 >
                   Cancel
                 </button>
@@ -222,60 +226,65 @@ export default function UsersPage() {
       )}
 
       {loading ? (
-        <p className="text-gray-400 mt-10 text-center">Loading…</p>
+        <div className="flex flex-col items-center justify-center py-32 space-y-4">
+          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+          <p className="text-[13px] font-medium text-gray-400">Fetching team members...</p>
+        </div>
       ) : (
-        <div className="rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700">User</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700">Role</th>
-                <th className="text-left px-4 py-3 font-semibold text-gray-700">Permissions</th>
-                <th className="text-right px-4 py-3 font-semibold text-gray-700">Actions</th>
+        <div className="admin-card">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="admin-table-header">
+                <th className="admin-table-th">Team Member</th>
+                <th className="admin-table-th">Role</th>
+                <th className="admin-table-th">Permissions</th>
+                <th className="admin-table-th text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-50">
               {users.map((user) => (
-                <tr key={user._id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-xs text-gray-400">{user.email}</p>
+                <tr key={user._id} className="admin-table-row">
+                  <td className="admin-table-td">
+                    <div className="flex flex-col">
+                      <span className="text-[14px] font-bold text-gray-900">{user.name}</span>
+                      <span className="text-[12px] text-gray-400 font-mono">{user.email}</span>
+                    </div>
                   </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  <td className="admin-table-td">
+                    <span className={`admin-badge ${
                       user.role === "admin"
-                        ? "bg-black text-white"
-                        : "bg-gray-100 text-gray-700"
+                        ? "admin-badge-dark"
+                        : "admin-badge-light"
                     }`}>
-                      {user.role === "admin" ? "Admin" : "User"}
+                      {user.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="admin-table-td">
                     {user.role === "admin" ? (
-                      <span className="text-xs text-gray-400 italic">All access</span>
+                      <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest italic">Root Access</span>
                     ) : user.permissions?.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {user.permissions.map((p) => (
-                          <span key={p} className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">
+                          <span key={p} className="admin-badge admin-badge-mono">
                             {ALL_PERMISSIONS.find((a) => a.key === p)?.label ?? p}
                           </span>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs text-amber-600">No permissions</span>
+                      <span className="text-[11px] font-bold text-amber-500 uppercase tracking-widest">No Access</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-2">
+                  <td className="admin-table-td">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => openEdit(user)}
-                        className="text-xs px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium transition-colors"
+                        className="admin-button-secondary py-2 px-4"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(user)}
-                        className="text-xs px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors"
+                        className="admin-button-danger py-2 px-4"
                       >
                         Delete
                       </button>
@@ -285,6 +294,11 @@ export default function UsersPage() {
               ))}
             </tbody>
           </table>
+          <div className="px-8 py-4 bg-gray-50/30 border-t border-gray-50 flex justify-between items-center">
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+              Total {users.length} member{users.length !== 1 ? "s" : ""} active
+            </p>
+          </div>
         </div>
       )}
     </div>

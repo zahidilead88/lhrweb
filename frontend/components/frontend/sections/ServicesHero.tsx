@@ -8,15 +8,15 @@ export default function ServicesHero({ section }: { section: any }) {
         <div>
           <div className="flex items-center gap-3 mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-black block" />
-            <span className="text-sm text-gray-500">Services</span>
+            <span className="text-sm text-gray-500">{section?.shortDescription}</span>
           </div>
           <h1 className="text-[7vw] md:text-[5vw] font-bold leading-tight tracking-tight max-w-lg">
             {section.title}
           </h1>
         </div>
         <div className="lg:flex lg:items-end lg:pb-2">
-          <p className="text-xl md:text-2xl font-medium leading-snug text-black max-w-md lg:max-w-sm">
-            {section.shortDescription}
+          <p className="text-xl md:text-2xl text-black">
+            {section.description}
           </p>
         </div>
       </div>

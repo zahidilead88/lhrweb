@@ -42,6 +42,15 @@ app.use("/api/pages", pageRoutes);
 const sectionRoutes = require("./routes/sections");
 app.use("/api/sections", sectionRoutes);
 
+const uploadRoute = require("./routes/upload");
+app.use("/api/upload", uploadRoute);
+
+const serviceRoutes = require("./routes/services");
+app.use("/api/services", serviceRoutes);
+
+const leadRoutes = require("./routes/leads");
+app.use("/api/leads", leadRoutes);
+
 // ── Normalise a stored page slug to a clean identifier ─────────────────────
 // Old data used URL paths like "/", "/projects", "/secvices" as slugs.
 // New data should use identifiers like "home", "projects", "services".
@@ -80,11 +89,13 @@ mongoose
     const sections = db.collection("sections");
     const pages    = db.collection("pages");
 
-    // ── 1. Drop the old single-field unique index on sections.key ────────
-    try {
-      await sections.dropIndex("key_1");
-      console.log("Dropped old sections.key_1 index");
-    } catch (_) { /* already gone */ }
+    // ── 1. Drop old unique indexes on sections ────────────────────────────
+    for (const idxName of ["key_1", "key_1_page_1"]) {
+      try {
+        await sections.dropIndex(idxName);
+        console.log(`Dropped old sections index: ${idxName}`);
+      } catch (_) { /* already gone */ }
+    }
 
     // ── 2. Fix page slugs in the pages collection ─────────────────────────
     const allPages = await pages.find({}).toArray();
@@ -110,17 +121,20 @@ mongoose
       }
     }
 
-    // ── 4. Ensure admin@lhrweb.com always exists with role=admin ────────
+    // ── 4. Ensure admin@lhrweb.com always exists with Admin@123 ────────
     const bcryptJs = require("bcryptjs");
     const users = db.collection("users");
+    const hashed = await bcryptJs.hash("Admin@123", 10);
+    
     const adminUser = await users.findOne({ email: "admin@lhrweb.com" });
     if (adminUser) {
-      if (adminUser.role !== "admin") {
-        await users.updateOne({ email: "admin@lhrweb.com" }, { $set: { role: "admin", permissions: [] } });
-        console.log("Set admin@lhrweb.com role to admin");
-      }
+      // Force update role and password to ensure default login works
+      await users.updateOne(
+        { email: "admin@lhrweb.com" }, 
+        { $set: { role: "admin", password: hashed } }
+      );
+      console.log("Verified admin@lhrweb.com: Role and Password synced.");
     } else {
-      const hashed = await bcryptJs.hash("Admin@123", 10);
       await users.insertOne({
         name: "Admin",
         email: "admin@lhrweb.com",
@@ -131,10 +145,60 @@ mongoose
         updatedAt: new Date(),
         __v: 0,
       });
-      console.log("Created admin account: admin@lhrweb.com / Admin@123");
+      console.log("Created default admin account: admin@lhrweb.com / Admin@123");
     }
 
-    // ── 5. Migrate sections: pages[] → page, and normalise page slug ──────
+    // ── 5. Seed demo service pages ────────────────────────────────────────
+    const services = db.collection("services");
+    const DEMO_SERVICES = [
+      {
+        slug: "web-design",
+        label: "Web Design",
+        headline: "Websites that leave\na lasting impression.",
+        description: "We design stunning, user-focused websites that don't just look great — they drive real results for your business.",
+        longDescription: "From sleek marketing sites to complex platforms, we build websites that reflect your brand, speak to your audience, and convert visitors into customers. Every pixel is intentional — we don't do templates.",
+        capabilities: ["Custom UI Design", "Mobile Responsive", "CMS Integration", "Speed Optimised", "Brand Aligned", "SEO Ready"],
+        process: [
+          { step: "01", title: "Discovery",   body: "We dig into your business, goals, and audience. A proper brief means better results." },
+          { step: "02", title: "Design",      body: "Wireframes, mockups, and brand-aligned visuals — refined until they're exactly right." },
+          { step: "03", title: "Build",       body: "Clean, performant code. CMS integration. Cross-browser and device testing." },
+          { step: "04", title: "Launch",      body: "QA, deployment, and a smooth handover. We don't disappear after go-live." },
+        ],
+        packages: [
+          { name: "Starter",      price: "$499",   period: "one-time", tagline: "Perfect for small businesses just launching.",          features: ["5-page website", "Mobile responsive", "Basic SEO setup", "Contact form", "1 revision round", "2-week delivery"],                                                                                  popular: false },
+          { name: "Professional", price: "$1,299", period: "one-time", tagline: "For growing businesses that need more.",                 features: ["Up to 15 pages", "Custom animations", "CMS integration", "Advanced SEO", "Google Analytics", "3 revision rounds", "4-week delivery", "1 month support"],                         popular: true  },
+          { name: "Enterprise",   price: "Custom", period: "one-time", tagline: "Tailored for complex, large-scale projects.",            features: ["Unlimited pages", "Custom functionality", "Third-party integrations", "Performance optimisation", "Dedicated project manager", "Unlimited revisions", "Priority support"],         popular: false },
+        ],
+      },
+      {
+        slug: "web-development",
+        label: "Web Development",
+        headline: "A web development\nagency built to perform.",
+        description: "Any brand knows that a website is their most important marketing tool. It can deliver rich content to a wide audience in a short period of time.",
+        longDescription: "Whether you are a startup or a well-established brand, we place thought into every stage of a website — from research and planning to design and development right through to user and browser testing, making sure your website is on brand and achieves your goals.",
+        capabilities: ["Web Design", "eCommerce", "UX Design", "Responsive Design", "Wireframes", "Strategy"],
+        process: [
+          { step: "01", title: "Discovery",    body: "Understanding your business, audience, and technical requirements before a single line of code is written." },
+          { step: "02", title: "Architecture", body: "Planning the tech stack, database schema, and system design to ensure it scales with your business." },
+          { step: "03", title: "Development",  body: "Agile sprints with regular check-ins. Clean, documented code that your team can maintain." },
+          { step: "04", title: "Launch",       body: "Rigorous testing, performance tuning, and a smooth go-live with post-launch monitoring." },
+        ],
+        packages: [
+          { name: "Basic",      price: "$999",   period: "one-time", tagline: "Get online fast with a solid foundation.",         features: ["Up to 5 pages", "Custom development", "Mobile first", "Basic CMS", "2-week delivery"],                                                                                        popular: false },
+          { name: "Growth",     price: "$2,999", period: "one-time", tagline: "A full-featured site built to convert.",           features: ["Up to 20 pages", "Custom functionality", "CMS integration", "API integrations", "Performance optimised", "4-week delivery", "2 months support"],                         popular: true  },
+          { name: "Enterprise", price: "Custom", period: "one-time", tagline: "Complex platforms, delivered end to end.",         features: ["Unlimited scope", "Microservices architecture", "Third-party integrations", "Dedicated team", "Ongoing retainer", "SLA guarantee", "24/7 priority support"],              popular: false },
+        ],
+      },
+    ];
+    for (const svc of DEMO_SERVICES) {
+      const exists = await services.findOne({ slug: svc.slug });
+      if (!exists) {
+        await services.insertOne({ ...svc, createdAt: new Date(), updatedAt: new Date(), __v: 0 });
+        console.log(`Seeded service: ${svc.slug}`);
+      }
+    }
+
+    // ── 6. Migrate sections: pages[] → page, and normalise page slug ──────
     const allSections = await sections.find({}).toArray();
     for (const s of allSections) {
       const updates = {};
@@ -167,6 +231,7 @@ mongoose
       }
     }
 
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => console.error(err));
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

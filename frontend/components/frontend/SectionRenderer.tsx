@@ -1,40 +1,50 @@
 import React from "react";
 import type { ComponentType } from "react";
+import BlockRenderer from "./BlockRenderer";
 
-// Home sections
-import HomeBanner from "./home/HomeBanner";
-import HomeProjects from "./home/HomeProjects";
-import BuildFuture from "./home/BuildFuture";
-import OurExpertise from "./home/OurExpertise";
-import HomeFaq from "./home/HomeFaq";
-import HomeBlog from "./home/HomeBlog";
+// All sections consolidated into one folder
+import HomeBanner from "./sections/HomeBanner";
+import HomeProjects from "./sections/HomeProjects";
+import BuildFuture from "./sections/BuildFuture";
+import OurExpertise from "./sections/OurExpertise";
+import HomeFaq from "./sections/HomeFaq";
+import HomeBlog from "./sections/HomeBlog";
+import ConversionSection from "./sections/ConversionSection";
 
-// Services sections
 import ServicesHero from "./sections/ServicesHero";
 import ServiceCategory from "./sections/ServiceCategory";
 import SectionCTA from "./sections/SectionCTA";
+import PricingSection from "./sections/PricingSection";
 
-// About sections
-import AboutHero from "./sections/about/AboutHero";
-import AboutIntro from "./sections/about/AboutIntro";
-import AboutTeam from "./sections/about/AboutTeam";
-import AboutCounters from "./sections/about/AboutCounters";
-import AboutClients from "./sections/about/AboutClients";
-import AboutTestimonials from "./sections/about/AboutTestimonials";
-import AboutCulture from "./sections/about/AboutCulture";
-import AboutBlog from "./sections/about/AboutBlog";
-import AboutCarousel from "./sections/about/AboutCarousel";
+import AboutHero from "./sections/AboutHero";
+import AboutIntro from "./sections/AboutIntro";
+import AboutTeam from "./sections/AboutTeam";
+import AboutCounters from "./sections/AboutCounters";
+import AboutClients from "./sections/AboutClients";
+import AboutTestimonials from "./sections/AboutTestimonials";
+import AboutCulture from "./sections/AboutCulture";
+import AboutBlog from "./sections/AboutBlog";
+import AboutCarousel from "./sections/AboutCarousel";
+
+import ContactForm from "./sections/ContactForm";
+import ProjectsListing from "./sections/ProjectsListing";
+import BlogListing from "./sections/BlogListing";
+import FeaturedProjects from "./sections/FeaturedProjects";
+import FeaturedBlogs from "./sections/FeaturedBlogs";
+import BrandFeatures from "./sections/BrandFeatures";
+
+export interface SectionExtras { blogs?: any[]; projects?: any[] }
 
 // Registry: section key → component
-// Add new sections here to make them available on any page via admin
-const REGISTRY: Record<string, ComponentType<{ section: any }>> = {
+const REGISTRY: Record<string, ComponentType<{ section: any; extras?: SectionExtras }>> = {
   // ── Home ──────────────────────────────────────────────────
-  "home-banner": HomeBanner,
-  "home-projects": HomeProjects,
-  "build-future": BuildFuture,
-  "our-expertise": OurExpertise,
-  "faq": HomeFaq,
-  "home-blog": HomeBlog,
+  "home-banner":        HomeBanner,
+  "home-projects":      HomeProjects,
+  "build-future":       BuildFuture,
+  "our-expertise":      OurExpertise,
+  "faq":                HomeFaq,
+  "home-blog":          HomeBlog,
+  "conversion-section": ConversionSection,
 
   // ── Services ──────────────────────────────────────────────
   "services-hero":   ServicesHero,
@@ -52,11 +62,25 @@ const REGISTRY: Record<string, ComponentType<{ section: any }>> = {
   "about-carousel":     AboutCarousel,
 
   // ── Generic (reusable on any page) ────────────────────────
-  "cta": SectionCTA,
+  "cta":              SectionCTA,
+  "pricing":          PricingSection,
+  "contact-form":     ContactForm,
+  "projects-listing": ProjectsListing,
+  "blog-listing":     BlogListing,
+  "featured-projects": FeaturedProjects,
+  "featured-blogs":    FeaturedBlogs,
+  "brand-features":    BrandFeatures,
 };
 
-export default function SectionRenderer({ section }: { section: any }) {
+export default function SectionRenderer({ section, extras }: { section: any; extras?: { blogs?: any[]; projects?: any[] } }) {
+  if (section.enabled === false) return null;
   const Component = REGISTRY[section?.key];
-  if (!Component) return null;
-  return <Component section={section} />;
+  const hasBlocks = Array.isArray(section.blocks) && section.blocks.length > 0;
+  if (!Component && !hasBlocks) return null;
+  return (
+    <>
+      {Component && <Component section={section} extras={extras} />}
+      {hasBlocks && <BlockRenderer blocks={section.blocks} />}
+    </>
+  );
 }

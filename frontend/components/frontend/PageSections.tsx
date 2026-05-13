@@ -2,26 +2,42 @@
 import { useEffect, useState } from "react";
 import SectionRenderer from "./SectionRenderer";
 
-interface PageSectionsProps {
-  page: string;
+interface PageData {
+  sections: any[];
+  blogs?: any[];
+  projects?: any[];
 }
 
-export default function PageSections({ page }: PageSectionsProps) {
-  const [sections, setSections] = useState<any[]>([]);
+interface PageSectionsProps {
+  page: string;
+  initialData?: PageData;
+}
+
+export default function PageSections({ page, initialData }: PageSectionsProps) {
+  const [data, setData] = useState<PageData>(initialData ?? { sections: [] });
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/sections?page=${page}`)
+    if (initialData) return;
+    fetch(`http://localhost:8000/api/pages/${page}`)
       .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) setSections(data);
+      .then((d) => {
+        if (Array.isArray(d?.sections)) {
+          setData({
+            sections: d.sections,
+            blogs:    d.blogs,
+            projects: d.projects,
+          });
+        }
       })
       .catch(() => {});
-  }, [page]);
+  }, [page, initialData]);
+
+  const extras = { blogs: data.blogs, projects: data.projects };
 
   return (
     <>
-      {sections.map((section) => (
-        <SectionRenderer key={section._id} section={section} />
+      {data.sections.map((section) => (
+        <SectionRenderer key={section._id} section={section} extras={extras} />
       ))}
     </>
   );

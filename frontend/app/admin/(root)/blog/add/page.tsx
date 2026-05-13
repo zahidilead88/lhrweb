@@ -54,105 +54,113 @@ export default function AddBlog() {
   };
 
   return (
-    <div className="p-8 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-6">Add Blog Post</h1>
-      <form onSubmit={handleSubmit} className="space-y-5">
-
+    <div className="max-w-4xl">
+      <div className="flex items-end justify-between mb-8">
         <div>
-          <label className="block text-sm font-semibold mb-1">Title <span className="text-red-500">*</span></label>
-          <input
-            className="border px-3 py-2 w-full rounded-lg text-sm"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. How we redesigned Acme's brand"
-            required
-          />
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">New Article</h1>
+          <p className="text-[13px] text-gray-500 mt-2">Create a new post for your journal or news section.</p>
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-semibold mb-1">Content <span className="text-red-500">*</span></label>
-          <textarea
-            className="border px-3 py-2 w-full rounded-lg text-sm"
-            rows={6}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Write the blog content here…"
-            required
-          />
-        </div>
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <form onSubmit={handleSubmit} className="p-8 space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Title</label>
+                <input
+                  className="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl text-[14px] font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. How we redesigned Acme's brand"
+                  required
+                />
+              </div>
 
-        {/* Categories */}
-        <div>
-          <label className="block text-sm font-semibold mb-2">
-            Categories
-            <span className="font-normal text-gray-400 ml-1">— used for filtering on the blog page</span>
-          </label>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {PRESET_CATEGORIES.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => toggleTag(tag)}
-                className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                  selectedTags.includes(tag)
-                    ? "bg-black text-white border-black"
-                    : "bg-white text-gray-600 border-gray-300 hover:border-gray-500"
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Article Content</label>
+                <textarea
+                  className="w-full px-5 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-[14px] leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                  rows={12}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Start writing your story here..."
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Featured Images</label>
+                
+                <div className="p-5 bg-gray-50/50 rounded-2xl border border-gray-100 border-dashed space-y-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Thumbnail (Card)</p>
+                    <input type="file" accept="image/*" onChange={(e) => setThumbnail(e.target.files?.[0] || null)} className="text-[11px] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[11px] file:font-bold file:bg-black file:text-white hover:file:bg-gray-800 transition-all cursor-pointer" />
+                  </div>
+                  <div className="pt-2 border-t border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Header Image (Full)</p>
+                    <input type="file" accept="image/*" onChange={(e) => setFullImage(e.target.files?.[0] || null)} className="text-[11px] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[11px] file:font-bold file:bg-gray-100 file:text-gray-600 hover:file:bg-gray-200 transition-all cursor-pointer" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Categories</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {PRESET_CATEGORIES.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleTag(tag)}
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
+                        selectedTags.includes(tag)
+                          ? "bg-black text-white border-black shadow-sm"
+                          : "bg-white text-gray-400 border-gray-100 hover:border-gray-300"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 px-4 py-2 bg-gray-50/50 border border-gray-100 rounded-xl text-[11px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
+                    placeholder="New category..."
+                    value={customTag}
+                    onChange={(e) => setCustomTag(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
+                  />
+                  <button type="button" onClick={addCustomTag} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-[11px] font-bold hover:bg-gray-200 transition-all">
+                    Add
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <input
-              className="border px-3 py-2 rounded-lg text-sm flex-1"
-              placeholder="Add custom category…"
-              value={customTag}
-              onChange={(e) => setCustomTag(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
-            />
-            <button type="button" onClick={addCustomTag} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">
-              Add
-            </button>
-          </div>
-          {selectedTags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {selectedTags.map((t) => (
-                <span key={t} className="inline-flex items-center gap-1 text-xs bg-black text-white px-2.5 py-1 rounded-full">
-                  {t}
-                  <button type="button" onClick={() => toggleTag(t)} className="hover:opacity-70 ml-0.5">×</button>
-                </span>
-              ))}
+
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 text-[13px] font-medium animate-in fade-in slide-in-from-top-1">
+              <span className="w-5 h-5 flex items-center justify-center bg-red-100 rounded-full text-[12px]">!</span>
+              {error}
             </div>
           )}
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold mb-1">Thumbnail <span className="text-gray-400 font-normal">(card image)</span></label>
-            <input type="file" accept="image/*" onChange={(e) => setThumbnail(e.target.files?.[0] || null)} className="text-sm" />
+          <div className="flex gap-4 pt-6 border-t border-gray-50">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 bg-black text-white px-8 py-4 rounded-2xl text-[14px] font-bold hover:bg-gray-800 disabled:opacity-50 transition-all shadow-sm"
+            >
+              {saving ? "Publishing article..." : "Publish Article"}
+            </button>
+            <button type="button" onClick={() => router.push("/admin/blog")} className="px-8 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[14px] font-bold hover:bg-gray-100 transition-all">
+              Discard
+            </button>
           </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1">Full image <span className="text-gray-400 font-normal">(detail page)</span></label>
-            <input type="file" accept="image/*" onChange={(e) => setFullImage(e.target.files?.[0] || null)} className="text-sm" />
-          </div>
-        </div>
-
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-
-        <div className="flex gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-black text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-800 disabled:opacity-50"
-          >
-            {saving ? "Saving…" : "Add Blog Post"}
-          </button>
-          <button type="button" onClick={() => router.push("/admin/blog")} className="px-6 py-2.5 rounded-lg text-sm border hover:bg-gray-50">
-            Cancel
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
