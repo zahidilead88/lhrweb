@@ -1,5 +1,8 @@
 "use client";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -30,7 +33,7 @@ interface Project {
   blocks?: Block[];
 }
 
-const IMG = (url: string) => `http://localhost:8000/${url}`;
+const IMG = (url: string) => `${API}/${url}`;
 
 // ── Block components ───────────────────────────────────────────────────────
 
@@ -77,6 +80,7 @@ function HeroBlock({ block, project }: { block: Block; project: Project }) {
 
       {/* Title */}
       <h1
+        className="heading"
         style={{
           fontSize: "clamp(48px, 10vw, 120px)",
           fontWeight: 900,
@@ -124,7 +128,7 @@ function IntroBlock({ block }: { block: Block }) {
       {/* Left */}
       <div>
         {block.heading && (
-          <p style={{ fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700, lineHeight: 1.2, marginBottom: "24px" }}>
+          <p className="heading" style={{ fontSize: "clamp(24px, 3vw, 40px)", fontWeight: 700, lineHeight: 1.2, marginBottom: "24px" }}>
             {block.heading}
           </p>
         )}
@@ -221,7 +225,7 @@ function VideoBlock({ block }: { block: Block }) {
   return (
     <section style={{ background: "#0d0d0d", padding: "40px" }}>
       {block.heading && (
-        <h2 style={{ color: "white", fontSize: "clamp(24px, 4vw, 48px)", fontWeight: 700, marginBottom: "32px" }}>
+        <h2 className="heading" style={{ color: "white", fontSize: "clamp(24px, 4vw, 48px)", fontWeight: 700, marginBottom: "32px" }}>
           {block.heading}
         </h2>
       )}
@@ -257,7 +261,7 @@ function PullQuoteBlock({ block }: { block: Block }) {
           </p>
         )}
         {block.heading && (
-          <h2 style={{ fontSize: "clamp(32px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
+          <h2 className="heading" style={{ fontSize: "clamp(32px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.02em" }}>
             {block.heading}
           </h2>
         )}
@@ -282,7 +286,7 @@ function CarouselBlock({ block }: { block: Block }) {
   return (
     <section style={{ background: "#0d0d0d", padding: "60px 40px" }}>
       {block.heading && (
-        <h2 style={{ color: "white", fontSize: "clamp(24px, 4vw, 48px)", fontWeight: 700, marginBottom: "32px" }}>
+        <h2 className="heading" style={{ color: "white", fontSize: "clamp(24px, 4vw, 48px)", fontWeight: 700, marginBottom: "32px" }}>
           {block.heading}
         </h2>
       )}
@@ -365,7 +369,7 @@ function MediaGridBlock({ block }: { block: Block }) {
   return (
     <section style={{ background: "#0d0d0d", padding: "60px 40px" }}>
       {block.heading && (
-        <h2 style={{ color: "white", fontSize: "clamp(24px, 4vw, 48px)", fontWeight: 700, marginBottom: "32px" }}>
+        <h2 className="heading" style={{ color: "white", fontSize: "clamp(24px, 4vw, 48px)", fontWeight: 700, marginBottom: "32px" }}>
           {block.heading}
         </h2>
       )}
@@ -391,6 +395,7 @@ function TextPatternBlock({ block }: { block: Block }) {
           {rows.map((i) => (
             <p
               key={i}
+              className="heading"
               style={{
                 fontSize: "clamp(40px, 7vw, 96px)",
                 fontWeight: 900,
@@ -422,7 +427,7 @@ function RelatedProjects({ currentId }: { currentId: string }) {
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/projects")
+    fetch(`${API}/api/projects`)
       .then((r) => r.json())
       .then((data: Project[]) => {
         const others = data.filter((p) => p._id !== currentId).slice(0, 3);
@@ -436,7 +441,7 @@ function RelatedProjects({ currentId }: { currentId: string }) {
   return (
     <section style={{ background: "#0d0d0d", color: "white", padding: "80px 40px" }}>
       <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "60px" }}>
-        <h2 style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 800, marginBottom: "40px" }}>
+        <h2 className="heading" style={{ fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 800, marginBottom: "40px" }}>
           More Work
         </h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
@@ -511,7 +516,7 @@ export default function ProjectBlockRenderer({ project }: { project: Project }) 
               </span>
             ))}
           </div>
-          <h1 style={{ fontSize: "clamp(40px, 8vw, 100px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-0.03em", marginBottom: "24px" }}>
+          <h1 className="heading" style={{ fontSize: "clamp(40px, 8vw, 100px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: "-0.03em", marginBottom: "24px" }}>
             {project.title}
           </h1>
           <p style={{ fontSize: "18px", color: "rgba(255,255,255,0.6)", maxWidth: "600px" }}>

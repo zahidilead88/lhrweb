@@ -48,7 +48,7 @@ export default function ProjectsListing({ extras }: { section?: any; extras?: { 
             <button
               type="button"
               onClick={() => setActive("all")}
-              className={`text-2xl md:text-3xl font-bold transition-colors leading-none ${
+              className={`heading text-2xl md:text-3xl font-bold transition-colors leading-none ${
                 activeCategory === "all" ? "text-black" : "text-gray-300 hover:text-gray-500"
               }`}
             >
@@ -59,7 +59,7 @@ export default function ProjectsListing({ extras }: { section?: any; extras?: { 
                 key={tag}
                 type="button"
                 onClick={() => setActive(tag)}
-                className={`text-2xl md:text-3xl font-bold transition-colors leading-none ${
+                className={`heading text-2xl md:text-3xl font-bold transition-colors leading-none ${
                   activeCategory === tag ? "text-black" : "text-gray-300 hover:text-gray-500"
                 }`}
               >

@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import { useState } from "react";
 import Image from "next/image";
 
@@ -16,7 +19,7 @@ interface Block {
 }
 
 const IMG = (url: string) =>
-  url.startsWith("http") ? url : `http://localhost:8000/${url}`;
+  url.startsWith("http") ? url : `${API}/${url}`;
 
 export default function CarouselBlock({ block }: { block: Block }) {
   const [idx, setIdx] = useState(0);
@@ -27,7 +30,7 @@ export default function CarouselBlock({ block }: { block: Block }) {
   
   return (
     <section className="bg-[#0d0d0d] px-10 py-15">
-      {block.heading && <h2 className="text-white text-[clamp(24px,4vw,48px)] font-bold mb-8">{block.heading}</h2>}
+      {block.heading && <h2 className="heading text-white text-[clamp(24px,4vw,48px)] font-bold mb-8">{block.heading}</h2>}
       <div className="relative">
         <div className="relative aspect-[16/9] rounded-2xl overflow-hidden">
           <Image src={IMG(block.images[idx])} alt="" fill className="object-cover" />

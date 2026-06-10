@@ -8,13 +8,13 @@ export default function ServiceCategory({ section }: { section: any }) {
   return (
     <section className="border-t border-black/10">
       <div className="px-6 md:px-10 lg:px-16 pt-6 overflow-hidden">
-        <span className="font-almiregodisplay font-bold text-[22vw] leading-none tracking-tighter select-none block">
+        <span className="heading font-almiregodisplay font-bold text-[22vw] leading-none tracking-tighter select-none block">
           {section.title}
         </span>
       </div>
 
       <div className="px-6 md:px-10 lg:px-16 pb-20 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-24 mt-10">
-        <p className="text-2xl md:text-3xl font-medium leading-snug max-w-xs">
+        <p className="heading text-2xl md:text-3xl font-medium leading-snug max-w-xs">
           {section.shortDescription}
         </p>
 

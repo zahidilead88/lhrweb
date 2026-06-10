@@ -1,3 +1,5 @@
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function AboutTeam({ section }: { section: any }) {
   if (!section) return null;
   const members: { title: string; content: string }[] = section.accordion || [];
@@ -14,7 +16,7 @@ export default function AboutTeam({ section }: { section: any }) {
         <span className="w-1.5 h-1.5 rounded-full bg-black" />
         <span className="text-sm text-gray-500">Our Team</span>
       </div>
-      <h2 className="text-4xl md:text-5xl font-bold mb-16 max-w-md leading-tight">
+      <h2 className="heading text-4xl md:text-5xl font-bold mb-16 max-w-md leading-tight">
         {section.title || "Multiple personalities, No egos."}
       </h2>
 
@@ -25,13 +27,13 @@ export default function AboutTeam({ section }: { section: any }) {
             <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 mb-3 relative">
               {member.img ? (
                 <img
-                  src={member.img.startsWith("http") ? member.img : `http://localhost:8000/${member.img}`}
+                  src={member.img.startsWith("http") ? member.img : `${API}/${member.img}`}
                   alt={member.name}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                  <span className="text-4xl font-bold text-gray-300">
+                  <span className="heading text-4xl font-bold text-gray-300">
                     {member.name.charAt(0)}
                   </span>
                 </div>

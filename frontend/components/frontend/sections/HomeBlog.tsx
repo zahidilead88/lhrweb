@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import Link from "next/link";
 import Image from "next/image";
 import type { SectionExtras } from "../SectionRenderer";
@@ -29,7 +32,7 @@ export default function HomeBlog({ section, extras }: { section: any; extras?: S
               <span className="text-sm text-gray-500">{section.shortDescription}</span>
             </div>
           )}
-          <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+          <h2 className="heading text-4xl md:text-5xl font-bold leading-tight">
             {section.title || "From the blog"}
           </h2>
         </div>
@@ -47,14 +50,14 @@ export default function HomeBlog({ section, extras }: { section: any; extras?: S
             {blog.thumbnail && (
               <div className="aspect-[16/9] rounded-2xl overflow-hidden mb-4 relative bg-gray-100">
                 <Image
-                  src={`http://localhost:8000/${blog.thumbnail}`}
+                  src={`${API}/${blog.thumbnail}`}
                   alt={blog.title}
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
             )}
-            <h3 className="font-semibold text-lg mb-2 group-hover:underline leading-snug">
+            <h3 className="heading font-semibold text-lg mb-2 group-hover:underline leading-snug">
               {blog.title}
             </h3>
             <p className="text-sm text-gray-500 line-clamp-2">{blog.content}</p>

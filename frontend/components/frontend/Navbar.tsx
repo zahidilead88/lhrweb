@@ -20,7 +20,7 @@ export default function Navbar() {
   const [menus, setMenus] = useState<MenuItem[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/menu")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || `${API}`}/api/menu`)
       .then((res) => res.json())
 
       .then((data: MenuItem[]) => setMenus(data))

@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 
+const API = process.env.NEXT_PUBLIC_API_URL || `${API}`;
+
 interface Lead {
   _id: string;
   name: string;
@@ -14,19 +16,21 @@ interface Lead {
 
 const STATUS_OPTIONS = ["all", "new", "contacted", "closed"] as const;
 
-const STATUS_STYLES: Record<string, string> = {
-  new:       "bg-blue-50 text-blue-700",
-  contacted: "bg-yellow-50 text-yellow-700",
-  closed:    "bg-green-50 text-green-700",
+const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
+  new:       { bg: "rgba(168,199,250,0.12)", color: "#a8c7fa" },
+  contacted: { bg: "rgba(251,191,36,0.12)",  color: "#fbbf24" },
+  closed:    { bg: "rgba(52,211,153,0.12)",  color: "#34d399" },
+};
+
+const D = {
+  surface: { background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12 } as React.CSSProperties,
+  th:      { color: "#9aa0a6", fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em", padding: "10px 16px", textAlign: "left" } as React.CSSProperties,
+  td:      { color: "#e8eaed", fontSize: 13, padding: "14px 16px", borderTop: "1px solid rgba(255,255,255,0.05)" } as React.CSSProperties,
 };
 
 function fmt(date: string) {
-  return new Date(date).toLocaleDateString("en-PK", {
-    day: "numeric", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
+  return new Date(date).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-
 function serviceLabel(slug: string) {
   return slug ? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
 }
@@ -39,26 +43,28 @@ export default function LeadsPage() {
   const [selected, setSelected] = useState<Lead | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  function authHeader(extra?: Record<string, string>) {
+    return { Authorization: `Bearer ${localStorage.getItem("token") || ""}`, ...extra };
+  }
+
   const fetchLeads = useCallback(async (status: string) => {
     setLoading(true);
     try {
-      const qs  = status !== "all" ? `?status=${status}` : "";
-      const res = await fetch(`http://localhost:8000/api/leads${qs}`);
+      const qs   = status !== "all" ? `?status=${status}` : "";
+      const res  = await fetch(`${API}/api/leads${qs}`, { headers: authHeader() });
       const data = await res.json();
       setLeads(data.leads ?? []);
       setTotal(data.total ?? 0);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchLeads(filter); }, [filter, fetchLeads]);
 
   async function updateStatus(id: string, status: string) {
-    const res = await fetch(`http://localhost:8000/api/leads/${id}`, {
-      method:  "PUT",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ status }),
+    const res = await fetch(`${API}/api/leads/${id}`, {
+      method: "PUT",
+      headers: authHeader({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ status }),
     });
     if (res.ok) {
       const updated = await res.json();
@@ -70,7 +76,7 @@ export default function LeadsPage() {
   async function deleteLead(id: string) {
     if (!confirm("Delete this lead?")) return;
     setDeleting(id);
-    await fetch(`http://localhost:8000/api/leads/${id}`, { method: "DELETE" });
+    await fetch(`${API}/api/leads/${id}`, { method: "DELETE", headers: authHeader() });
     setLeads((prev) => prev.filter((l) => l._id !== id));
     if (selected?._id === id) setSelected(null);
     setTotal((t) => t - 1);
@@ -78,45 +84,49 @@ export default function LeadsPage() {
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Leads</h1>
-          <p className="text-sm text-gray-500 mt-1">{total} total submission{total !== 1 ? "s" : ""}</p>
+          <h1 className="text-[22px] font-semibold mb-1" style={{ color: "#e8eaed" }}>Leads</h1>
+          <p className="text-[13px]" style={{ color: "#9aa0a6" }}>{total} total submission{total !== 1 ? "s" : ""}</p>
         </div>
-        <div className="flex gap-2">
+        {/* Filter tabs */}
+        <div className="flex items-center gap-1 p-1 rounded-xl" style={{ background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.08)" }}>
           {STATUS_OPTIONS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all ${
-                filter === s ? "bg-black text-white" : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-200"
-              }`}
-            >
+            <button key={s} onClick={() => setFilter(s)}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-semibold capitalize transition-colors"
+              style={{
+                background: filter === s ? "rgba(168,199,250,0.15)" : "transparent",
+                color:      filter === s ? "#a8c7fa" : "#9aa0a6",
+              }}>
               {s}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex gap-5">
         {/* Table */}
-        <div className={`${selected ? "w-1/2" : "w-full"} transition-all`}>
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div className={`${selected ? "w-1/2" : "w-full"} transition-all`} style={{ minWidth: 0 }}>
+          <div style={D.surface} className="overflow-hidden">
             {loading ? (
-              <div className="py-20 text-center text-gray-400 text-sm">Loading…</div>
+              <div className="flex items-center justify-center py-16">
+                <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(255,255,255,0.1)", borderTopColor: "#a8c7fa" }} />
+              </div>
             ) : leads.length === 0 ? (
-              <div className="py-20 text-center text-gray-400 text-sm">No leads yet.</div>
+              <div className="flex flex-col items-center justify-center py-16">
+                <p className="text-[13px]" style={{ color: "#9aa0a6" }}>No leads yet.</p>
+              </div>
             ) : (
-              <table className="w-full text-sm">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-100 text-left text-xs text-gray-400 uppercase tracking-wider">
-                    <th className="px-5 py-4 font-medium">Name</th>
-                    <th className="px-5 py-4 font-medium">Service</th>
-                    <th className="px-5 py-4 font-medium">Status</th>
-                    <th className="px-5 py-4 font-medium">Date</th>
-                    <th className="px-5 py-4 font-medium"></th>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                    <th style={D.th}>Name</th>
+                    <th style={D.th} className="hidden md:table-cell">Service</th>
+                    <th style={D.th}>Status</th>
+                    <th style={D.th} className="hidden lg:table-cell">Date</th>
+                    <th style={{ ...D.th, width: 40 }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -124,26 +134,30 @@ export default function LeadsPage() {
                     <tr
                       key={lead._id}
                       onClick={() => setSelected(selected?._id === lead._id ? null : lead)}
-                      className={`border-b border-gray-50 cursor-pointer transition-colors hover:bg-gray-50 ${
-                        selected?._id === lead._id ? "bg-gray-50" : ""
-                      }`}
+                      className="cursor-pointer transition-colors"
+                      style={{ background: selected?._id === lead._id ? "rgba(168,199,250,0.06)" : "transparent" }}
+                      onMouseEnter={(e) => { if (selected?._id !== lead._id) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.03)"; }}
+                      onMouseLeave={(e) => { if (selected?._id !== lead._id) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                     >
-                      <td className="px-5 py-4">
-                        <p className="font-semibold text-gray-900">{lead.name}</p>
-                        <p className="text-gray-400 text-xs">{lead.email}</p>
+                      <td style={D.td}>
+                        <p className="font-medium mb-0.5" style={{ color: "#a8c7fa" }}>{lead.name}</p>
+                        <p className="text-[12px]" style={{ color: "#9aa0a6" }}>{lead.email}</p>
                       </td>
-                      <td className="px-5 py-4 text-gray-600">{serviceLabel(lead.service)}</td>
-                      <td className="px-5 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium capitalize ${STATUS_STYLES[lead.status]}`}>
+                      <td style={{ ...D.td, color: "#9aa0a6" }} className="hidden md:table-cell">{serviceLabel(lead.service)}</td>
+                      <td style={D.td}>
+                        <span style={{ ...(STATUS_STYLES[lead.status] ?? STATUS_STYLES.new), borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600 }}>
                           {lead.status}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-gray-400 text-xs whitespace-nowrap">{fmt(lead.createdAt)}</td>
-                      <td className="px-5 py-4">
+                      <td style={{ ...D.td, fontSize: 12, color: "#9aa0a6" }} className="hidden lg:table-cell whitespace-nowrap">{fmt(lead.createdAt)}</td>
+                      <td style={D.td}>
                         <button
                           onClick={(e) => { e.stopPropagation(); deleteLead(lead._id); }}
                           disabled={deleting === lead._id}
-                          className="text-gray-300 hover:text-red-500 transition-colors text-lg leading-none"
+                          className="text-[18px] leading-none transition-colors"
+                          style={{ color: "rgba(255,255,255,0.2)" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = "#f28b82")}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}
                           title="Delete"
                         >
                           ×
@@ -159,67 +173,73 @@ export default function LeadsPage() {
 
         {/* Detail panel */}
         {selected && (
-          <div className="w-1/2 bg-white rounded-2xl border border-gray-100 p-6 self-start">
-            <div className="flex items-start justify-between mb-6">
+          <div className="w-1/2 self-start" style={D.surface}>
+            <div className="flex items-start justify-between p-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
               <div>
-                <h2 className="text-lg font-bold">{selected.name}</h2>
-                <p className="text-sm text-gray-500">{selected.email}</p>
+                <h2 className="text-[15px] font-semibold mb-0.5" style={{ color: "#e8eaed" }}>{selected.name}</h2>
+                <p className="text-[12px]" style={{ color: "#9aa0a6" }}>{selected.email}</p>
               </div>
-              <button onClick={() => setSelected(null)} className="text-gray-300 hover:text-black text-2xl leading-none">×</button>
+              <button onClick={() => setSelected(null)}
+                className="text-[20px] leading-none w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+                style={{ color: "#9aa0a6" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#e8eaed")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#9aa0a6")}>
+                ×
+              </button>
             </div>
 
-            {/* Contact info */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs text-gray-400 mb-1">Phone</p>
-                <p className="font-medium text-sm">{selected.phone || "—"}</p>
+            <div className="p-5 space-y-5">
+              {/* Info grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Phone",     value: selected.phone || "—" },
+                  { label: "Service",   value: serviceLabel(selected.service) },
+                  { label: "Submitted", value: fmt(selected.createdAt) },
+                ].map(({ label, value }) => (
+                  <div key={label} className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: "#9aa0a6" }}>{label}</p>
+                    <p className="text-[13px] font-medium" style={{ color: "#e8eaed" }}>{value}</p>
+                  </div>
+                ))}
+                <div className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: "#9aa0a6" }}>Status</p>
+                  <select
+                    value={selected.status}
+                    onChange={(e) => updateStatus(selected._id, e.target.value)}
+                    className="text-[13px] font-medium w-full outline-none capitalize cursor-pointer"
+                    style={{ background: "transparent", color: STATUS_STYLES[selected.status]?.color ?? "#e8eaed", border: "none" }}>
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
               </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs text-gray-400 mb-1">Service</p>
-                <p className="font-medium text-sm">{serviceLabel(selected.service)}</p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs text-gray-400 mb-1">Submitted</p>
-                <p className="font-medium text-sm">{fmt(selected.createdAt)}</p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs text-gray-400 mb-2">Status</p>
-                <select
-                  value={selected.status}
-                  onChange={(e) => updateStatus(selected._id, e.target.value)}
-                  className="text-sm font-medium bg-transparent outline-none w-full capitalize cursor-pointer"
-                >
-                  <option value="new">New</option>
-                  <option value="contacted">Contacted</option>
-                  <option value="closed">Closed</option>
-                </select>
-              </div>
-            </div>
 
-            {/* Message */}
-            <div className="mb-6">
-              <p className="text-xs text-gray-400 mb-2">Message</p>
-              <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 rounded-xl p-4">
-                {selected.message}
-              </p>
-            </div>
+              {/* Message */}
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#9aa0a6" }}>Message</p>
+                <p className="text-[13px] leading-relaxed whitespace-pre-wrap p-4 rounded-xl" style={{ color: "#e8eaed", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  {selected.message}
+                </p>
+              </div>
 
-            {/* Actions */}
-            <div className="flex gap-3">
-              <a
-                href={`mailto:${selected.email}`}
-                className="flex-1 text-center px-4 py-2.5 bg-black text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors"
-              >
-                Reply by Email
-              </a>
-              {selected.phone && (
-                <a
-                  href={`tel:${selected.phone}`}
-                  className="flex-1 text-center px-4 py-2.5 border border-gray-200 text-sm font-medium rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  Call
+              {/* Actions */}
+              <div className="flex gap-3">
+                <a href={`mailto:${selected.email}`}
+                  className="flex-1 text-center py-2.5 rounded-xl text-[13px] font-semibold transition-colors"
+                  style={{ background: "#a8c7fa", color: "#111111" }}>
+                  Reply by Email
                 </a>
-              )}
+                {selected.phone && (
+                  <a href={`tel:${selected.phone}`}
+                    className="flex-1 text-center py-2.5 rounded-xl text-[13px] font-semibold transition-colors"
+                    style={{ border: "1px solid rgba(255,255,255,0.1)", color: "#9aa0a6" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#e8eaed"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.25)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "#9aa0a6"; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.1)"; }}>
+                    Call
+                  </a>
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import { useRef } from "react";
 
 export default function AboutCarousel({ section }: { section: any }) {
@@ -22,7 +25,7 @@ export default function AboutCarousel({ section }: { section: any }) {
               <span className="text-sm text-gray-500">{section.shortDescription}</span>
             </div>
           )}
-          <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+          <h2 className="heading text-4xl md:text-5xl font-bold leading-tight">
             {section.title}
           </h2>
         </div>
@@ -63,7 +66,7 @@ export default function AboutCarousel({ section }: { section: any }) {
           >
             {item.content ? (
               <img
-                src={item.content.startsWith("http") ? item.content : `http://localhost:8000/${item.content}`}
+                src={item.content.startsWith("http") ? item.content : `${API}/${item.content}`}
                 alt={item.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />

@@ -1,3 +1,5 @@
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ProjectBlockRenderer from "@/components/frontend/project/ProjectBlockRenderer";
@@ -28,7 +30,7 @@ interface Project {
 
 async function fetchProject(id: string): Promise<Project | null> {
   try {
-    const res = await fetch(`http://localhost:8000/api/projects/${id}`, {
+    const res = await fetch(`${API}/api/projects/${id}`, {
       cache: "no-store",
     });
     if (!res.ok) return null;
@@ -52,7 +54,7 @@ export async function generateMetadata({
     openGraph: {
       title: project.title,
       description: project.shortDescription,
-      images: project.image ? [`http://localhost:8000/${project.image}`] : [],
+      images: project.image ? [`${API}/${project.image}`] : [],
     },
   };
 }

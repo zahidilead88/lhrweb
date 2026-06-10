@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import Image from "next/image";
 
 interface Block {
@@ -15,7 +18,7 @@ interface Block {
 }
 
 const IMG = (url: string) =>
-  url.startsWith("http") ? url : `http://localhost:8000/${url}`;
+  url.startsWith("http") ? url : `${API}/${url}`;
 
 export default function ImageFullBlock({ block }: { block: Block }) {
   if (!block.images?.[0]) return null;

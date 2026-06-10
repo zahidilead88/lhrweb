@@ -2,144 +2,115 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-interface Counts {
-  pages: number;
-  blogs: number;
-  projects: number;
-  sections: number;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+interface Counts    { pages: number; blogs: number; projects: number; sections: number; }
+interface Analytics { totalUsers: number; activeSubscriptions: number; newUsersThisMonth: number; totalSites: number; }
+
+const S = {
+  card:  { background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12 } as React.CSSProperties,
+  label: { color: "#9aa0a6", fontSize: 11, fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.08em" },
+};
+
+function StatCard({ label, value, href, action }: { label: string; value: number; href: string; action: string }) {
+  return (
+    <div className="p-5 flex flex-col justify-between gap-6" style={S.card}>
+      <div>
+        <p style={S.label} className="mb-3">{label}</p>
+        <span className="text-[40px] font-bold leading-none" style={{ color: "#e8eaed" }}>{value}</span>
+      </div>
+      <Link href={href} className="flex items-center justify-between text-[12px] pt-4 transition-colors group" style={{ color: "#9aa0a6", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        {action}<span className="group-hover:translate-x-0.5 transition-transform">→</span>
+      </Link>
+    </div>
+  );
 }
 
 export default function AdminDashboard() {
-  const [counts, setCounts] = useState<Counts>({ pages: 0, blogs: 0, projects: 0, sections: 0 });
+  const [counts,    setCounts]    = useState<Counts>({ pages: 0, blogs: 0, projects: 0, sections: 0 });
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:8000/api/pages").then((r) => r.json()),
-      fetch("http://localhost:8000/api/blogs").then((r) => r.json()),
-      fetch("http://localhost:8000/api/projects").then((r) => r.json()),
-      fetch("http://localhost:8000/api/sections").then((r) => r.json()),
-    ])
-      .then(([pages, blogs, projects, sections]) => {
-        setCounts({
-          pages:    Array.isArray(pages)    ? pages.length    : 0,
-          blogs:    Array.isArray(blogs)    ? blogs.length    : 0,
-          projects: Array.isArray(projects) ? projects.length : 0,
-          sections: Array.isArray(sections) ? sections.length : 0,
-        });
-      })
+      fetch(`${API}/api/pages`).then((r) => r.json()),
+      fetch(`${API}/api/blogs`).then((r) => r.json()),
+      fetch(`${API}/api/projects`).then((r) => r.json()),
+      fetch(`${API}/api/sections`).then((r) => r.json()),
+    ]).then(([pages, blogs, projects, sections]) => {
+      setCounts({
+        pages:    Array.isArray(pages)    ? pages.length    : 0,
+        blogs:    Array.isArray(blogs)    ? blogs.length    : 0,
+        projects: Array.isArray(projects) ? projects.length : 0,
+        sections: Array.isArray(sections) ? sections.length : 0,
+      });
+    }).catch(() => {});
+
+    const token = localStorage.getItem("token");
+    fetch(`${API}/api/builder/analytics`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setAnalytics(d))
       .catch(() => {});
   }, []);
 
-  const cards = [
-    {
-      label:   "Pages",
-      count:   counts.pages,
-      addHref: "/admin/pages",
-      addLabel: "Manage Pages",
-      bg:      "bg-blue-50",
-      border:  "border-blue-200",
-      text:    "text-blue-700",
-      num:     "text-blue-600",
-    },
-    {
-      label:   "Sections",
-      count:   counts.sections,
-      addHref: "/admin/sections/add",
-      addLabel: "Add Section",
-      bg:      "bg-purple-50",
-      border:  "border-purple-200",
-      text:    "text-purple-700",
-      num:     "text-purple-600",
-    },
-    {
-      label:   "Projects",
-      count:   counts.projects,
-      addHref: "/admin/project/add",
-      addLabel: "Add Project",
-      bg:      "bg-green-50",
-      border:  "border-green-200",
-      text:    "text-green-700",
-      num:     "text-green-600",
-    },
-    {
-      label:   "Blog Posts",
-      count:   counts.blogs,
-      addHref: "/admin/blog/add",
-      addLabel: "Add Blog Post",
-      bg:      "bg-orange-50",
-      border:  "border-orange-200",
-      text:    "text-orange-700",
-      num:     "text-orange-600",
-    },
+  const quickLinks = [
+    { label: "Pages",         href: "/admin/pages"    },
+    { label: "Blog",          href: "/admin/blog"     },
+    { label: "Projects",      href: "/admin/project"  },
+    { label: "Leads",         href: "/admin/leads"    },
+    { label: "Users",         href: "/admin/users"    },
+    { label: "Builder Sites", href: "/admin/sites"    },
+    { label: "Footer",        href: "/admin/footer"   },
   ];
 
   return (
     <div className="space-y-8">
-      <div className="flex items-end justify-between mb-8">
-        <div>
-          <h1 className="admin-heading">Dashboard</h1>
-          <p className="admin-subtext">Welcome back. Here's what's happening with your site today.</p>
+      <div>
+        <h1 className="text-[22px] font-semibold mb-1" style={{ color: "#e8eaed" }}>Dashboard</h1>
+        <p className="text-[13px]" style={{ color: "#9aa0a6" }}>Welcome back. Here&apos;s an overview of your site.</p>
+      </div>
+
+      {/* CMS stats */}
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#5f6368" }}>Content</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Pages"      value={counts.pages}    href="/admin/pages"        action="Manage Pages"  />
+          <StatCard label="Sections"   value={counts.sections} href="/admin/sections/add" action="Add Section"   />
+          <StatCard label="Projects"   value={counts.projects} href="/admin/project/add"  action="Add Project"   />
+          <StatCard label="Blog Posts" value={counts.blogs}    href="/admin/blog/add"     action="Add Blog Post" />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {cards.map((card) => (
-          <div
-            key={card.label}
-            className="group admin-card p-8 admin-card-hover flex flex-col gap-6"
-          >
-            <div>
-              <p className="admin-label">{card.label}</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-5xl font-bold tracking-tight text-gray-900">{card.count}</span>
-                <span className="text-[12px] font-bold text-gray-300">Total</span>
-              </div>
-            </div>
-            
-            <Link
-              href={card.addHref}
-              className="admin-button-secondary w-full group-hover:bg-gray-100"
-            >
-              <span>{card.addLabel}</span>
-              <span className="text-lg leading-none transition-transform group-hover:translate-x-1">→</span>
-            </Link>
+      {/* Business analytics */}
+      {analytics && (
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#5f6368" }}>Business</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatCard label="Total Users"       value={analytics.totalUsers}          href="/admin/users" action="View Users"    />
+            <StatCard label="Active Subs"       value={analytics.activeSubscriptions} href="/admin/users" action="View Billing"  />
+            <StatCard label="New (30 days)"     value={analytics.newUsersThisMonth}   href="/admin/users" action="View Users"    />
+            <StatCard label="Builder Sites"     value={analytics.totalSites}          href="/admin/sites" action="View Sites"    />
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
-      {/* Placeholder for Quick Actions or Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 admin-card p-8">
-          <h3 className="text-[14px] font-bold text-gray-900 mb-6">Recent Activity</h3>
-          <div className="space-y-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-4 py-4 border-b border-gray-50 last:border-0">
-                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-[13px] font-bold text-gray-900">System initialization complete</p>
-                  <p className="text-[11px] text-gray-400">Successfully synced with central API</p>
-                </div>
-                <span className="text-[11px] font-bold text-gray-300 uppercase">Just now</span>
-              </div>
+      {/* Quick links */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-1 p-5" style={S.card}>
+          <p className="text-[12px] font-semibold mb-4 pb-4" style={{ ...S.label, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            Quick Access
+          </p>
+          <div className="space-y-0.5">
+            {quickLinks.map(({ label, href }) => (
+              <Link key={label} href={href}
+                className="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-colors"
+                style={{ color: "#9aa0a6" }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "#e8eaed"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#9aa0a6"; }}
+              >
+                {label}<span style={{ opacity: 0.4 }}>→</span>
+              </Link>
             ))}
           </div>
-        </div>
-        
-        <div className="bg-black rounded-[2.5rem] p-8 shadow-sm flex flex-col justify-between overflow-hidden relative group">
-          <div className="relative z-10">
-            <h3 className="text-[14px] font-bold text-white mb-2">Need help?</h3>
-            <p className="text-[12px] text-gray-400 leading-relaxed">Check out our documentation or contact support for advanced configurations.</p>
-          </div>
-          <Link href="#" className="relative z-10 mt-8 text-[12px] font-bold text-white flex items-center gap-2 hover:opacity-80 transition-opacity">
-            Visit Help Center <span className="text-lg">→</span>
-          </Link>
-          
-          {/* Abstract decoration */}
-          <div className="absolute -right-4 -bottom-4 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:bg-white/10 transition-all" />
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Section = require("../models/Section");
 const upload = require("../middleware/upload");
+const { auth, requireAdmin } = require("../middleware/auth");
 
 // GET all sections, optionally filter by page
 router.get("/", async (req, res) => {
@@ -29,6 +30,7 @@ router.get("/:id", async (req, res) => {
 // POST create section
 router.post(
   "/",
+  auth, requireAdmin,
   upload.fields([
     { name: "image", maxCount: 1 },
     { name: "featuredImage", maxCount: 1 },
@@ -61,9 +63,22 @@ router.post(
   }
 );
 
+// PUT reorder sections — body: { ids: ["id1","id2",...] } in new order
+router.put("/reorder", auth, requireAdmin, async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) return res.status(400).json({ message: "ids must be an array" });
+    await Promise.all(ids.map((id, index) => Section.findByIdAndUpdate(id, { order: index })));
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to reorder sections" });
+  }
+});
+
 // PUT update section
 router.put(
   "/:id",
+  auth, requireAdmin,
   upload.fields([
     { name: "image", maxCount: 1 },
     { name: "featuredImage", maxCount: 1 },
@@ -100,7 +115,7 @@ router.put(
 );
 
 // PUT update name, enabled, order, blocks (JSON — no image upload)
-router.put("/:id/blocks", async (req, res) => {
+router.put("/:id/blocks", auth, requireAdmin, async (req, res) => {
   try {
     const { name, enabled, order, blocks } = req.body;
     const update = {};
@@ -117,7 +132,7 @@ router.put("/:id/blocks", async (req, res) => {
 });
 
 // DELETE section
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, requireAdmin, async (req, res) => {
   try {
     const section = await Section.findByIdAndDelete(req.params.id);
     if (!section) return res.status(404).json({ message: "Section not found" });

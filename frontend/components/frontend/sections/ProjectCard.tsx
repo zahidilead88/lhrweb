@@ -1,5 +1,8 @@
 "use client";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+
 import React, { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -86,10 +89,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
                 loop
                 muted
               >
-                <source src={`http://localhost:8000/${project.videoUrl}`} type="video/mp4" />
+                <source src={`${API}/${project.videoUrl}`} type="video/mp4" />
               </video>
               <Image
-                src={`http://localhost:8000/${project.image}`}
+                src={`${API}/${project.image}`}
                 alt={project.title}
                 width={750}
                 height={562}
@@ -98,7 +101,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
             </>
           ) : (
             <Image
-              src={`http://localhost:8000/${project.image}`}
+              src={`${API}/${project.image}`}
               alt={project.title}
               width={750}
               height={562}

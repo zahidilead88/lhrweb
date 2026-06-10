@@ -4,11 +4,12 @@ const Page = require("../models/Page");
 const Section = require("../models/Section");
 const Blog = require("../models/Blog");
 const Project = require("../models/Project");
+const { auth, requireAdmin } = require("../middleware/auth");
 
 const SECTIONS_NEEDING_BLOGS    = new Set(["home-blog", "about-blog", "featured-blogs"]);
 const SECTIONS_NEEDING_PROJECTS = new Set(["home-projects", "about-hero", "featured-projects"]);
 
-// Get all pages
+// Get all main website pages (builder project pages belong in /api/builder, not here)
 router.get("/", async (req, res) => {
   try {
     const pages = await Page.find().sort({ name: 1 });
@@ -34,7 +35,11 @@ router.get("/:slug", async (req, res) => {
     const needsProjects = slug === "projects" || [...keys].some(k => SECTIONS_NEEDING_PROJECTS.has(k));
 
     const [blogs, projects] = await Promise.all([
-      needsBlogs    ? Blog.find().sort({ createdAt: -1 }).limit(50).lean()  : Promise.resolve(undefined),
+      needsBlogs
+        ? (slug === "blog"
+            ? Blog.find().sort({ createdAt: -1 }).limit(50).lean()
+            : Blog.find({ featuredPages: slug }).sort({ createdAt: -1 }).limit(50).lean())
+        : Promise.resolve(undefined),
       needsProjects ? Project.find().sort({ createdAt: -1 }).lean()          : Promise.resolve(undefined),
     ]);
 
@@ -49,7 +54,7 @@ router.get("/:slug", async (req, res) => {
 });
 
 // Create a new page
-router.post("/", async (req, res) => {
+router.post("/", auth, requireAdmin, async (req, res) => {
   try {
     const { name, slug, description } = req.body;
     if (!name || !slug) {
@@ -67,7 +72,7 @@ router.post("/", async (req, res) => {
 });
 
 // Update a page — cascades slug change to all sections
-router.put("/:id", async (req, res) => {
+router.put("/:id", auth, requireAdmin, async (req, res) => {
   try {
     const { name, slug, description } = req.body;
     const existing = await Page.findById(req.params.id);
@@ -96,7 +101,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // Save content sections (with nested blocks) for a page
-router.put("/:id/sections", async (req, res) => {
+router.put("/:id/sections", auth, requireAdmin, async (req, res) => {
   try {
     const { sections } = req.body;
     if (!Array.isArray(sections)) return res.status(400).json({ message: "sections must be an array" });
@@ -111,7 +116,7 @@ router.put("/:id/sections", async (req, res) => {
 });
 
 // Delete a page
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, requireAdmin, async (req, res) => {
   try {
     const page = await Page.findByIdAndDelete(req.params.id);
     if (!page) return res.status(404).json({ message: "Page not found" });

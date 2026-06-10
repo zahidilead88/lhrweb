@@ -1,3 +1,5 @@
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import Image from "next/image";
 import React, { useState, useEffect, useRef } from "react";
 
@@ -42,14 +44,14 @@ const OurExpertise = ({ section }: { section: any }) => {
 
   return (
     <div ref={sectionRef} className="p-4 min-h-screen flex flex-col justify-center transition-colors duration-500">
-      <h2 className="font-almiregodisplay text-[5vw]">{section.title}</h2>
+      <h2 className="heading font-almiregodisplay text-[5vw]">{section.title}</h2>
       <div className="grid grid-cols-12 gap-5">
         <div className="col-span-12 md:col-span-4">
           <p className="opacity-80">{section.description}</p>
           {section.image && (
             <Image
               className="mt-5 rounded-2xl bg-gray-50 h-auto md:h-[90%] object-cover"
-              src={`http://localhost:8000/${section.image}`}
+              src={`${API}/${section.image}`}
               alt={section.title || "Expertise Image"}
               width={500}
               height={500}
@@ -57,7 +59,7 @@ const OurExpertise = ({ section }: { section: any }) => {
           )}
         </div>
         <div className="col-span-12 md:col-span-8">
-          <p className="text-[28px] md:text-[36px] font-almiregodisplay mb-8">
+          <p className="heading text-[28px] md:text-[36px] font-almiregodisplay mb-8">
             {section.shortDescription}
           </p>
           
@@ -69,7 +71,7 @@ const OurExpertise = ({ section }: { section: any }) => {
                   key={index}
                 >
                   <div 
-                    className="text-[5vw] leading-[1.2] py-1 md:leading-[18vh] font-almiregodisplay flex justify-between items-center group cursor-pointer"
+                    className="heading text-[5vw] leading-[1.2] py-1 md:leading-[18vh] font-almiregodisplay flex justify-between items-center group cursor-pointer"
                     onClick={() => toggleAccordion(index)}
                   >
                     {item.title}

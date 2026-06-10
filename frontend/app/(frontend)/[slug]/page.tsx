@@ -1,3 +1,5 @@
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import PageSections from "@/components/frontend/PageSections";
@@ -5,7 +7,7 @@ import BlockRenderer from "@/components/frontend/BlockRenderer";
 
 async function fetchPage(slug: string) {
   try {
-    const res = await fetch(`http://localhost:8000/api/pages/${slug}`, { cache: "no-store" });
+    const res = await fetch(`${API}/api/pages/${slug}`, { cache: "no-store" });
     console.log(res, "res");
     if (!res.ok) return null;
     return res.json();

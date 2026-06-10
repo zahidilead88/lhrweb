@@ -7,9 +7,9 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchNewLeadsCount } from "@/store/leadsSlice";
 
 const TopBar = () => {
-  const router    = useRouter();
-  const dispatch  = useAppDispatch();
-  const newCount  = useAppSelector((s) => s.leads.newCount);
+  const router   = useRouter();
+  const dispatch = useAppDispatch();
+  const newCount = useAppSelector((s) => s.leads.newCount);
 
   useEffect(() => {
     dispatch(fetchNewLeadsCount());
@@ -24,26 +24,32 @@ const TopBar = () => {
   };
 
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 h-16 flex justify-between items-center fixed top-0 w-[82%] z-40 transition-all">
-      <div className="flex items-center gap-3">
-        <h1 className="text-sm font-semibold text-gray-900">Admin Dashboard</h1>
-      </div>
-      <div className="flex items-center gap-3">
+    <header
+      className="h-14 flex justify-between items-center px-6 fixed top-0 right-0 left-[220px] z-40"
+      style={{ background: "#111111", borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+    >
+      <div />
+      <div className="flex items-center gap-1">
         <Link
           href="/admin/leads"
-          className="relative flex items-center justify-center w-9 h-9 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all"
+          className="relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
+          style={{ color: "#9aa0a6" }}
           title="Leads"
         >
-          <Bell size={18} />
+          <Bell size={16} />
           {newCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+            <span
+              className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 text-[9px] font-bold rounded-full flex items-center justify-center px-1"
+              style={{ background: "#ea4335", color: "#fff" }}
+            >
               {newCount > 99 ? "99+" : newCount}
             </span>
           )}
         </Link>
         <button
           onClick={handleLogout}
-          className="text-[12px] font-semibold text-gray-500 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all"
+          className="text-[12px] px-3 py-1.5 rounded-lg transition-colors"
+          style={{ color: "#9aa0a6" }}
         >
           Sign out
         </button>

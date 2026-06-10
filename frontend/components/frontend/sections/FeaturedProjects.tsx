@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -32,7 +35,7 @@ export default function FeaturedProjects({ section, extras }: { section: any; ex
                 {section.shortDescription}
               </p>
             )}
-            <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 leading-[1.1]">
+            <h2 className="heading text-4xl md:text-6xl font-bold tracking-tight text-gray-900 leading-[1.1]">
               {section.title || "Featured Work"}
             </h2>
           </div>
@@ -57,7 +60,7 @@ export default function FeaturedProjects({ section, extras }: { section: any; ex
               <div className="relative aspect-[4/5] overflow-hidden rounded-[2.5rem] bg-gray-50">
                 {project.image && (
                   <Image
-                    src={`http://localhost:8000/${project.image}`}
+                    src={`${API}/${project.image}`}
                     alt={project.title}
                     fill
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
@@ -74,7 +77,7 @@ export default function FeaturedProjects({ section, extras }: { section: any; ex
                     </span>
                   ))}
                 </div>
-                <h3 className="text-2xl md:text-3xl font-bold text-gray-900 group-hover:text-gray-600 transition-colors">
+                <h3 className="heading text-2xl md:text-3xl font-bold text-gray-900 group-hover:text-gray-600 transition-colors">
                   {project.title}
                 </h3>
                 {project.shortDescription && (

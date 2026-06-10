@@ -10,7 +10,7 @@ export default function ServicesHero({ section }: { section: any }) {
             <span className="w-1.5 h-1.5 rounded-full bg-black block" />
             <span className="text-sm text-gray-500">{section?.shortDescription}</span>
           </div>
-          <h1 className="text-[7vw] md:text-[5vw] font-bold leading-tight tracking-tight max-w-lg">
+          <h1 className="heading text-[7vw] md:text-[5vw] font-bold leading-tight tracking-tight max-w-lg">
             {section.title}
           </h1>
         </div>

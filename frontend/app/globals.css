@@ -4,8 +4,24 @@
   --font-inter: var(--font-inter);
 }
 
-html {
-  scroll-behavior: smooth;
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
 }
 
 body {
@@ -30,6 +46,10 @@ body.bg-dark .bg-gray-50 {
   color: inherit !important;
 }
 .font-almiregodisplay {
+  font-family: var(--font-AlmiregoDisplay);
+}
+
+.heading {
   font-family: var(--font-AlmiregoDisplay);
 }
 /* styles/globals.css */
@@ -138,6 +158,35 @@ body.bg-dark .bg-gray-50 {
   .admin-table-row {
     @apply hover:bg-gray-50/30 transition-colors border-b border-gray-50 last:border-0;
   }
+}
+
+/* ── Banner animations ──────────────────────────────────────── */
+@keyframes bannerTextIn {
+  from { opacity: 0; transform: translateY(36px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes bannerImgFlyIn {
+  0%   {
+    opacity: 0;
+    transform: perspective(1400px) rotateX(34deg) translateY(70px) scale(0.88);
+    box-shadow: 0 0px 0px rgba(0,0,0,0);
+  }
+  60%  { opacity: 1; }
+  100% {
+    opacity: 1;
+    transform: perspective(1400px) rotateX(0deg) translateY(0) scale(1);
+    box-shadow: 0 28px 72px rgba(0,0,0,0.18);
+  }
+}
+
+.banner-text-enter {
+  animation: bannerTextIn  0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.banner-img-enter {
+  animation: bannerImgFlyIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center bottom;
 }
 
 /* ── Footer Theme Logic ───────────────────────────────────── */

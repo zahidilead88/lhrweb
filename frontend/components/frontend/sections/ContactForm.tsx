@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import { useState } from "react";
 
 export default function ContactForm() {
@@ -15,7 +18,7 @@ export default function ContactForm() {
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:8000/api/leads", {
+      const res = await fetch(`${API}/api/leads`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify(form),
@@ -39,14 +42,14 @@ export default function ContactForm() {
           <span className="w-2 h-2 rounded-full bg-black block" />
           <span className="text-sm font-bold uppercase tracking-wider">Contact</span>
         </div>
-        <h1 className="text-5xl md:text-7xl font-bold leading-tight">Let&apos;s build <br /> something great.</h1>
+        <h1 className="heading text-5xl md:text-7xl font-bold leading-tight">Let&apos;s build <br /> something great.</h1>
       </section>
 
       <div className="px-6 md:px-10 lg:px-20 py-16 grid grid-cols-1 lg:grid-cols-2 gap-16">
         <div>
           {submitted ? (
             <div className="py-16">
-              <h2 className="text-3xl font-bold mb-4">Message received!</h2>
+              <h2 className="heading text-3xl font-bold mb-4">Message received!</h2>
               <p className="text-gray-500 text-lg">Thanks for reaching out. We&apos;ll get back to you within 24 hours.</p>
             </div>
           ) : (
@@ -100,7 +103,7 @@ export default function ContactForm() {
 
         <div className="lg:pl-10 space-y-10">
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">Get in touch</h3>
+            <h3 className="heading text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">Get in touch</h3>
             <div className="space-y-3">
               <a href="tel:+923214516195" className="flex items-center gap-3 text-lg hover:text-gray-600 transition-colors">
                 <span className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center">📞</span>
@@ -113,7 +116,7 @@ export default function ContactForm() {
             </div>
           </div>
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">Location</h3>
+            <h3 className="heading text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">Location</h3>
             <p className="text-lg leading-relaxed text-gray-700">LHRWEB Digital<br />1-C, Block 1, Johar Town<br />Lahore, Pakistan</p>
           </div>
         </div>

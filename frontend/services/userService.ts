@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:8000/api/users";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = `${API}/api/users`;
 
 export const getUsers = async () => {
   const res = await fetch(API_URL);

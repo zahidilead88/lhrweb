@@ -87,7 +87,7 @@ export default function PricingSection({ section }: { section: any }) {
 
       {/* Heading */}
       {heading && (
-        <h2 className="text-3xl md:text-4xl font-bold leading-tight max-w-xl mb-12">
+        <h2 className="heading text-3xl md:text-4xl font-bold leading-tight max-w-xl mb-12">
           {heading}
         </h2>
       )}
@@ -102,7 +102,7 @@ export default function PricingSection({ section }: { section: any }) {
               </span>
             )}
 
-            <h3 className="text-lg font-bold mb-1">{plan.name}</h3>
+            <h3 className="heading text-lg font-bold mb-1">{plan.name}</h3>
             {plan.description && (
               <p className="text-sm text-gray-500 mb-4 leading-relaxed">{plan.description}</p>
             )}
@@ -110,7 +110,7 @@ export default function PricingSection({ section }: { section: any }) {
             {plan.price && (
               <div className="mb-5">
                 <span className="text-sm align-top mt-1 inline-block">$</span>
-                <span className="text-5xl font-bold leading-none">{plan.price}</span>
+                <span className="heading text-5xl font-bold leading-none">{plan.price}</span>
                 {plan.period && (
                   <span className="text-sm text-gray-500 ml-1">{plan.period}</span>
                 )}
@@ -150,7 +150,7 @@ export default function PricingSection({ section }: { section: any }) {
         {/* "Build your own" custom card */}
         {section.button?.label && (
           <div className="border border-gray-200 rounded-2xl p-6 flex flex-col justify-between min-h-[300px]">
-            <h3 className="text-2xl md:text-3xl font-bold leading-snug">
+            <h3 className="heading text-2xl md:text-3xl font-bold leading-snug">
               {section.description || "Build your own plan. We'll tailor the perfect team."}
             </h3>
             <div className="mt-6">

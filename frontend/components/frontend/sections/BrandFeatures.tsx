@@ -1,3 +1,5 @@
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import Image from "next/image";
 
 interface FeatureCard {
@@ -82,7 +84,7 @@ export default function BrandFeatures({ section }: BrandFeaturesProps) {
         <span className="inline-block bg-purple-100 text-purple-700 text-sm font-medium px-4 py-1.5 rounded-full mb-6">
           {badge}
         </span>
-        <h2 className="text-4xl md:text-5xl font-bold leading-tight mb-5">{heading}</h2>
+        <h2 className="heading text-4xl md:text-5xl font-bold leading-tight mb-5">{heading}</h2>
         <p className="text-gray-500 text-base md:text-lg leading-relaxed">{subtext}</p>
       </div>
 
@@ -99,7 +101,7 @@ export default function BrandFeatures({ section }: BrandFeaturesProps) {
                   src={
                     feature.image.startsWith("http")
                       ? feature.image
-                      : `http://localhost:8000/${feature.image}`
+                      : `${API}/${feature.image}`
                   }
                   alt={feature.imageAlt || feature.title}
                   fill
@@ -113,7 +115,7 @@ export default function BrandFeatures({ section }: BrandFeaturesProps) {
             </div>
 
             {/* Text */}
-            <h3 className="font-bold text-base mb-1.5">{feature.title}</h3>
+            <h3 className="heading font-bold text-base mb-1.5">{feature.title}</h3>
             <p className="text-sm text-gray-500 leading-relaxed">{feature.description}</p>
           </div>
         ))}

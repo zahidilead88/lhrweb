@@ -1,6 +1,16 @@
 const express = require("express");
 const router  = express.Router();
 const Service = require("../models/Service");
+const { auth, requireAdmin } = require("../middleware/auth");
+const upload  = require("../middleware/upload");
+
+function parseBody(body) {
+  const d = { ...body };
+  if (typeof d.capabilities === "string") try { d.capabilities = JSON.parse(d.capabilities); } catch { d.capabilities = []; }
+  if (typeof d.process     === "string") try { d.process     = JSON.parse(d.process);     } catch { d.process = []; }
+  if (typeof d.packages    === "string") try { d.packages    = JSON.parse(d.packages);    } catch { d.packages = []; }
+  return d;
+}
 
 router.get("/", async (req, res) => {
   try {
@@ -25,9 +35,11 @@ router.get("/:ref", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", auth, requireAdmin, upload.single("image"), async (req, res) => {
   try {
-    const service = await Service.create(req.body);
+    const data = parseBody(req.body);
+    if (req.file) data.image = req.file.filename;
+    const service = await Service.create(data);
     res.status(201).json(service);
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ message: "Slug already exists" });
@@ -35,9 +47,11 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", auth, requireAdmin, upload.single("image"), async (req, res) => {
   try {
-    const service = await Service.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const data = parseBody(req.body);
+    if (req.file) data.image = req.file.filename;
+    const service = await Service.findByIdAndUpdate(req.params.id, data, { new: true });
     if (!service) return res.status(404).json({ message: "Not found" });
     res.json(service);
   } catch (err) {
@@ -46,7 +60,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, requireAdmin, async (req, res) => {
   try {
     const service = await Service.findByIdAndDelete(req.params.id);
     if (!service) return res.status(404).json({ message: "Not found" });

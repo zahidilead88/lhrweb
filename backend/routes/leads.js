@@ -2,6 +2,7 @@ const express    = require("express");
 const router     = express.Router();
 const nodemailer = require("nodemailer");
 const Lead       = require("../models/Lead");
+const { auth, requireAdmin } = require("../middleware/auth");
 
 // ── Mailer ────────────────────────────────────────────────────────────────────
 function createTransporter() {
@@ -73,7 +74,7 @@ router.post("/", async (req, res) => {
 });
 
 // ── GET /api/leads  (admin) ───────────────────────────────────────────────────
-router.get("/", async (req, res) => {
+router.get("/", auth, requireAdmin, async (req, res) => {
   try {
     const { status, page = 1, limit = 20 } = req.query;
     const filter = status && status !== "all" ? { status } : {};
@@ -88,7 +89,7 @@ router.get("/", async (req, res) => {
 });
 
 // ── PUT /api/leads/:id  (admin — update status) ───────────────────────────────
-router.put("/:id", async (req, res) => {
+router.put("/:id", auth, requireAdmin, async (req, res) => {
   try {
     const { status } = req.body;
     if (!["new", "contacted", "closed"].includes(status)) {
@@ -103,7 +104,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // ── DELETE /api/leads/:id  (admin) ───────────────────────────────────────────
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, requireAdmin, async (req, res) => {
   try {
     await Lead.findByIdAndDelete(req.params.id);
     res.json({ success: true });

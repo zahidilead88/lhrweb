@@ -50,15 +50,28 @@ export interface SectionType {
 export const SECTION_TYPES: SectionType[] = [
   // ── Home ─────────────────────────────────────────────────────────────────
   {
-    key:         "home-banner",
-    label:       "Home Banner",
+    key:         "voila-banner",
+    label:       "Voila Banner (Studio style)",
     group:       "Home",
-    description: "Full-screen hero with a large headline and decorative logo SVG",
+    description: "Full-screen hero inspired by Studio Voila — stacked project cards on the right, headline + project circles on the left. Fetches projects automatically.",
+    fields: {
+      autoContent: "This banner auto-fetches your projects and displays them as stacked cards. No manual content needed.",
+    },
+  },
+  {
+    key:         "home-banner",
+    label:       "Home Banner (Classic)",
+    group:       "Home",
+    description: "Full-screen hero with a large headline, service pills, project marquee, and scroll-driven LHRWEB SVG",
     fields: {
       title: {
         label:       "Headline",
         placeholder: "e.g. We are your digital partner for strategy, design and development.",
         hint:        "Displayed in large AlmiregO font at the centre of the hero",
+      },
+      shortDescription: {
+        label:       "Tagline",
+        placeholder: "e.g. Branding & Digital Studio — Lahore",
       },
     },
   },

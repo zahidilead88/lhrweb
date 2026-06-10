@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import { useEffect, useState } from "react";
 import SectionRenderer from "./SectionRenderer";
 
@@ -18,7 +21,7 @@ export default function PageSections({ page, initialData }: PageSectionsProps) {
 
   useEffect(() => {
     if (initialData) return;
-    fetch(`http://localhost:8000/api/pages/${page}`)
+    fetch(`${API}/api/pages/${page}`)
       .then((res) => res.json())
       .then((d) => {
         if (Array.isArray(d?.sections)) {

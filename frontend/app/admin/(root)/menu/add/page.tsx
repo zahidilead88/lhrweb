@@ -1,133 +1,89 @@
 "use client";
 
+const API = process.env.NEXT_PUBLIC_API_URL || `${API}`;
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const INPUT: React.CSSProperties = { background: "#111111", border: "1px solid rgba(255,255,255,0.1)", color: "#e8eaed", borderRadius: 10, padding: "10px 14px", fontSize: 13, width: "100%", outline: "none" };
+const LABEL: React.CSSProperties = { color: "#9aa0a6", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 };
+function iFocus(e: React.FocusEvent<HTMLInputElement>) { e.currentTarget.style.borderColor = "rgba(168,199,250,0.5)"; }
+function iBlur (e: React.FocusEvent<HTMLInputElement>) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }
+
 export default function AddMenuPage() {
-  const [title, setTitle] = useState("");
-  const [url, setUrl] = useState("");
+  const [title, setTitle]       = useState("");
+  const [url, setUrl]           = useState("");
   const [sublinks, setSublinks] = useState([{ title: "", url: "" }]);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    await fetch("http://localhost:8000/api/menu", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, url, sublinks }),
-    });
-
+    await fetch(`${API}/api/menu`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, url, sublinks }) });
     router.push("/admin/menu");
   };
 
-  const handleSubLinkChange = (
-    index: number,
-    field: "title" | "url",
-    value: string
-  ) => {
-    const updated = [...sublinks];
-    updated[index][field] = value;
-    setSublinks(updated);
+  const changeSubLink = (i: number, f: "title" | "url", v: string) => {
+    const u = [...sublinks]; u[i][f] = v; setSublinks(u);
   };
-
-  const addSubLink = () => {
-    setSublinks([...sublinks, { title: "", url: "" }]);
-  };
-
-  const removeSubLink = (index: number) => {
-    const updated = sublinks.filter((_, i) => i !== index);
-    setSublinks(updated.length ? updated : [{ title: "", url: "" }]);
+  const addSubLink    = () => setSublinks([...sublinks, { title: "", url: "" }]);
+  const removeSubLink = (i: number) => {
+    const u = sublinks.filter((_, j) => j !== i);
+    setSublinks(u.length ? u : [{ title: "", url: "" }]);
   };
 
   return (
-    <div className="max-w-2xl">
-      <div className="flex items-end justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">New Navigation Link</h1>
-          <p className="text-[13px] text-gray-500 mt-2">Create a new item for your website's main menu.</p>
-        </div>
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-[22px] font-semibold mb-1" style={{ color: "#e8eaed" }}>New Navigation Link</h1>
+        <p className="text-[13px]" style={{ color: "#9aa0a6" }}>Create a new item for your website&apos;s main menu.</p>
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+      <div style={{ background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12 }} className="overflow-hidden">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div>
-            <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Display Title</label>
-            <input
-              type="text"
-              placeholder="e.g. Services"
-              className="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl text-[14px] font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
+            <label style={LABEL}>Display Title</label>
+            <input style={INPUT} placeholder="e.g. Services" value={title} onChange={(e) => setTitle(e.target.value)} required onFocus={iFocus} onBlur={iBlur} />
+          </div>
+          <div>
+            <label style={LABEL}>Link URL</label>
+            <input style={{ ...INPUT, fontFamily: "monospace" }} placeholder="e.g. /services" value={url} onChange={(e) => setUrl(e.target.value)} required onFocus={iFocus} onBlur={iBlur} />
           </div>
 
-          <div>
-            <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Link URL</label>
-            <input
-              type="text"
-              placeholder="e.g. /services"
-              className="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl text-[14px] font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="pt-4">
-            <div className="flex items-center justify-between mb-4 px-1">
-              <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Dropdown Sub-links</label>
-              <button
-                type="button"
-                onClick={addSubLink}
-                className="text-[11px] font-bold text-black hover:opacity-70 transition-opacity"
-              >
+          <div className="pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="flex items-center justify-between mb-4">
+              <label style={{ ...LABEL, marginBottom: 0 }}>Dropdown Sub-links</label>
+              <button type="button" onClick={addSubLink}
+                className="text-[12px] font-semibold transition-colors" style={{ color: "#a8c7fa" }}>
                 + Add Row
               </button>
             </div>
-            
             <div className="space-y-3">
-              {sublinks.map((sub, index) => (
-                <div key={index} className="flex gap-3 items-center group">
-                  <input
-                    type="text"
-                    placeholder="Label"
-                    className="flex-1 px-4 py-2.5 bg-gray-50/50 border border-gray-100 rounded-xl text-[13px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
-                    value={sub.title}
-                    onChange={(e) => handleSubLinkChange(index, "title", e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    placeholder="URL"
-                    className="flex-1 px-4 py-2.5 bg-gray-50/50 border border-gray-100 rounded-xl text-[13px] font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
-                    value={sub.url}
-                    onChange={(e) => handleSubLinkChange(index, "url", e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeSubLink(index)}
-                    className="p-2 text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    ✕
+              {sublinks.map((sub, i) => (
+                <div key={i} className="flex gap-3 items-center">
+                  <input style={{ ...INPUT, flex: 1 }} placeholder="Label" value={sub.title}
+                    onChange={(e) => changeSubLink(i, "title", e.target.value)} onFocus={iFocus} onBlur={iBlur} />
+                  <input style={{ ...INPUT, flex: 1, fontFamily: "monospace" }} placeholder="URL" value={sub.url}
+                    onChange={(e) => changeSubLink(i, "url", e.target.value)} onFocus={iFocus} onBlur={iBlur} />
+                  <button type="button" onClick={() => removeSubLink(i)}
+                    className="text-[18px] w-7 h-7 flex items-center justify-center rounded-lg flex-shrink-0 transition-colors"
+                    style={{ color: "rgba(255,255,255,0.2)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#f28b82")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}>
+                    ×
                   </button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex gap-4 pt-6 border-t border-gray-50">
-            <button
-              type="submit"
-              className="flex-1 bg-black text-white px-8 py-4 rounded-2xl text-[14px] font-bold hover:bg-gray-800 transition-all shadow-sm"
-            >
+          <div className="flex gap-3 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <button type="submit"
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold"
+              style={{ background: "#a8c7fa", color: "#111111" }}>
               Add to Menu
             </button>
-            <button 
-              type="button" 
-              onClick={() => router.push("/admin/menu")}
-              className="px-8 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[14px] font-bold hover:bg-gray-100 transition-all"
-            >
+            <button type="button" onClick={() => router.push("/admin/menu")}
+              className="px-5 py-2.5 rounded-xl text-[13px] font-semibold"
+              style={{ border: "1px solid rgba(255,255,255,0.1)", color: "#9aa0a6" }}>
               Cancel
             </button>
           </div>

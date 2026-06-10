@@ -1,13 +1,17 @@
 "use client";
 
+const API = process.env.NEXT_PUBLIC_API_URL || `${API}`;
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-const PRESET_CATEGORIES = [
-  "design", "development", "branding", "marketing", "strategy",
-  "ecommerce", "shopify", "seo", "social media", "case study",
-  "news", "tutorial", "opinion",
-];
+const PRESET_CATEGORIES = ["design","development","branding","marketing","strategy","ecommerce","shopify","seo","social media","case study","news","tutorial","opinion"];
+interface PageData { _id: string; name: string; slug: string; }
+
+const INPUT: React.CSSProperties  = { background: "#111111", border: "1px solid rgba(255,255,255,0.1)", color: "#e8eaed", borderRadius: 10, padding: "10px 14px", fontSize: 13, width: "100%", outline: "none" };
+const LABEL: React.CSSProperties  = { color: "#9aa0a6", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 };
+const SURFACE: React.CSSProperties = { background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12 };
+function iFocus(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) { e.currentTarget.style.borderColor = "rgba(168,199,250,0.5)"; }
+function iBlur (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }
 
 export default function EditBlogPage() {
   const { id } = useParams<{ id: string }>();
@@ -17,151 +21,140 @@ export default function EditBlogPage() {
   const [content, setContent]           = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag]       = useState("");
+  const [pages, setPages]               = useState<PageData[]>([]);
+  const [featuredPages, setFeaturedPages] = useState<string[]>([]);
   const [loading, setLoading]           = useState(true);
   const [saving, setSaving]             = useState(false);
   const [error, setError]               = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/blogs/${id}`)
+    fetch(`${API}/api/pages`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setPages(data.filter((p) => p.name && p.slug)); })
+      .catch(() => {});
+
+    fetch(`${API}/api/blogs/${id}`)
       .then((r) => r.json())
       .then((data) => {
         setTitle(data.title || "");
         setContent(data.content || "");
         setSelectedTags(Array.isArray(data.tags) ? data.tags.map((t: string) => t.trim().toLowerCase()) : []);
+        setFeaturedPages(Array.isArray(data.featuredPages) ? data.featuredPages.map((p: string) => p.trim()) : []);
       })
       .catch(() => setError("Could not load blog"))
       .finally(() => setLoading(false));
   }, [id]);
 
-  const toggleTag = (tag: string) =>
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-
-  const addCustomTag = () => {
+  const toggleTag  = (t: string) => setSelectedTags((p) => p.includes(t) ? p.filter((x) => x !== t) : [...p, t]);
+  const togglePage = (s: string) => setFeaturedPages((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]);
+  const addCustom  = () => {
     const t = customTag.trim().toLowerCase();
-    if (t && !selectedTags.includes(t)) setSelectedTags((prev) => [...prev, t]);
+    if (t && !selectedTags.includes(t)) setSelectedTags((p) => [...p, t]);
     setCustomTag("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSaving(true);
-    setError(null);
-    const res = await fetch(`http://localhost:8000/api/blogs/${id}`, {
+    e.preventDefault(); setSaving(true); setError(null);
+    const token = localStorage.getItem("token") || "";
+    const res = await fetch(`${API}/api/blogs/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content, tags: selectedTags.join(",") }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ title, content, tags: selectedTags.join(","), featuredPages }),
     });
     setSaving(false);
-    if (res.ok) {
-      router.push("/admin/blog");
-    } else {
-      const data = await res.json();
-      setError(data.message || "Failed to update blog");
-    }
+    if (res.ok) router.push("/admin/blog");
+    else { const d = await res.json(); setError(d.message || "Failed to update blog"); }
   };
 
-  if (loading) return <div className="p-8 text-gray-400">Loading…</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(255,255,255,0.1)", borderTopColor: "#a8c7fa" }} />
+    </div>
+  );
 
   return (
-    <div className="max-w-4xl">
-      <div className="flex items-end justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Edit Article</h1>
-          <p className="text-[13px] text-gray-500 mt-2">Modify the details of your existing blog post.</p>
-        </div>
+    <div className="max-w-4xl space-y-6">
+      <div>
+        <h1 className="text-[22px] font-semibold mb-1" style={{ color: "#e8eaed" }}>Edit Article</h1>
+        <p className="text-[13px]" style={{ color: "#9aa0a6" }}>Modify the details of your existing blog post.</p>
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-        <form onSubmit={handleSubmit} className="p-8 space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
+      <div style={SURFACE} className="overflow-hidden">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main content */}
+            <div className="lg:col-span-2 space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Title</label>
-                <input
-                  className="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl text-[14px] font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. How we redesigned Acme's brand"
-                  required
-                />
+                <label style={LABEL}>Title</label>
+                <input style={INPUT} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. How we redesigned Acme's brand" required onFocus={iFocus} onBlur={iBlur} />
               </div>
-
               <div>
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Article Content</label>
-                <textarea
-                  className="w-full px-5 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-[14px] leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
-                  rows={12}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Start writing your story here..."
-                  required
-                />
+                <label style={LABEL}>Article Content</label>
+                <textarea style={{ ...INPUT, resize: "vertical" }} rows={14} value={content} onChange={(e) => setContent(e.target.value)} placeholder="Start writing your story here..." required onFocus={iFocus} onBlur={iBlur} />
               </div>
             </div>
 
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">Categories</label>
-                <div className="flex flex-wrap gap-1.5">
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Tags */}
+              <div>
+                <label style={LABEL}>Categories</label>
+                <div className="flex flex-wrap gap-1.5 mb-3">
                   {PRESET_CATEGORIES.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all ${
-                        selectedTags.includes(tag)
-                          ? "bg-black text-white border-black shadow-sm"
-                          : "bg-white text-gray-400 border-gray-100 hover:border-gray-300"
-                      }`}
-                    >
+                    <button key={tag} type="button" onClick={() => toggleTag(tag)}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors"
+                      style={{ background: selectedTags.includes(tag) ? "rgba(168,199,250,0.15)" : "rgba(255,255,255,0.05)", color: selectedTags.includes(tag) ? "#a8c7fa" : "#9aa0a6", border: `1px solid ${selectedTags.includes(tag) ? "rgba(168,199,250,0.3)" : "rgba(255,255,255,0.08)"}` }}>
                       {tag}
                     </button>
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input
-                    className="flex-1 px-4 py-2 bg-gray-50/50 border border-gray-100 rounded-xl text-[11px] focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/5 transition-all"
-                    placeholder="New category..."
-                    value={customTag}
+                  <input style={{ ...INPUT, flex: 1 }} placeholder="Custom category…" value={customTag}
                     onChange={(e) => setCustomTag(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
-                  />
-                  <button type="button" onClick={addCustomTag} className="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-[11px] font-bold hover:bg-gray-200 transition-all">
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }}
+                    onFocus={iFocus} onBlur={iBlur} />
+                  <button type="button" onClick={addCustom}
+                    className="px-3 py-2 rounded-xl text-[12px] font-semibold flex-shrink-0"
+                    style={{ background: "rgba(255,255,255,0.06)", color: "#9aa0a6" }}>
                     Add
                   </button>
                 </div>
               </div>
 
-              <div className="p-6 bg-gray-50/50 rounded-3xl border border-gray-100">
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-4">Post Info</p>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-[12px]">
-                    <span className="text-gray-500">ID</span>
-                    <span className="font-mono text-gray-400">{id}</span>
+              {/* Featured pages */}
+              {pages.length > 0 && (
+                <div className="pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <label style={LABEL}>Featured on Pages</label>
+                  <p className="text-[11px] mb-3" style={{ color: "#5f6368" }}>Select pages to feature this post.</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {pages.map((p) => (
+                      <button key={p.slug} type="button" onClick={() => togglePage(p.slug)}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors"
+                        style={{ background: featuredPages.includes(p.slug) ? "rgba(168,199,250,0.15)" : "rgba(255,255,255,0.05)", color: featuredPages.includes(p.slug) ? "#a8c7fa" : "#9aa0a6", border: `1px solid ${featuredPages.includes(p.slug) ? "rgba(168,199,250,0.3)" : "rgba(255,255,255,0.08)"}` }}>
+                        {p.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
           {error && (
-            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 text-[13px] font-medium animate-in fade-in slide-in-from-top-1">
-              <span className="w-5 h-5 flex items-center justify-center bg-red-100 rounded-full text-[12px]">!</span>
-              {error}
+            <div className="px-4 py-3 rounded-xl text-[12px] flex items-center gap-2" style={{ background: "rgba(234,67,53,0.1)", border: "1px solid rgba(234,67,53,0.2)", color: "#f28b82" }}>
+              <span className="w-4 h-4 flex items-center justify-center rounded-full text-[10px] flex-shrink-0" style={{ background: "rgba(234,67,53,0.2)" }}>!</span>{error}
             </div>
           )}
 
-          <div className="flex gap-4 pt-6 border-t border-gray-50">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 bg-black text-white px-8 py-4 rounded-2xl text-[14px] font-bold hover:bg-gray-800 disabled:opacity-50 transition-all shadow-sm"
-            >
-              {saving ? "Updating post..." : "Save Changes"}
+          <div className="flex gap-3 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <button type="submit" disabled={saving}
+              className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold"
+              style={{ background: "#a8c7fa", color: "#111111" }}>
+              {saving ? "Saving…" : "Save Changes"}
             </button>
-            <button type="button" onClick={() => router.push("/admin/blog")} className="px-8 py-4 bg-gray-50 text-gray-500 rounded-2xl text-[14px] font-bold hover:bg-gray-100 transition-all">
+            <button type="button" onClick={() => router.push("/admin/blog")}
+              className="px-5 py-2.5 rounded-xl text-[13px] font-semibold"
+              style={{ border: "1px solid rgba(255,255,255,0.1)", color: "#9aa0a6" }}>
               Cancel
             </button>
           </div>

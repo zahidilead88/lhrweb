@@ -18,12 +18,16 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
-    role: { type: String, enum: ["admin", "user"], default: "user" },
+    role: { type: String, enum: ["admin", "user", "builder"], default: "user" },
     permissions: {
       type: [String],
       enum: ["pages", "sections", "blog", "projects", "menu"],
       default: [],
     },
+    package:               { type: String, enum: ["starter", "pro"] },
+    stripeCustomerId:      { type: String },
+    passwordResetToken:    { type: String },
+    passwordResetExpires:  { type: Date },
   },
   { timestamps: true }
 );

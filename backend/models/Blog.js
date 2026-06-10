@@ -6,6 +6,7 @@ const blogSchema = new mongoose.Schema({
   thumbnail: { type: String },
   fullImage: { type: String },
   tags: { type: [String], default: [] },
+  featuredPages: { type: [String], default: [] },
   createdAt: {
     type: Date,
     default: Date.now,

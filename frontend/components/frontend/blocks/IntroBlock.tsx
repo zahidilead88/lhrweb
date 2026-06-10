@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import Image from "next/image";
 
 interface Block {
@@ -15,14 +18,14 @@ interface Block {
 }
 
 const IMG = (url: string) =>
-  url.startsWith("http") ? url : `http://localhost:8000/${url}`;
+  url.startsWith("http") ? url : `${API}/${url}`;
 
 export default function IntroBlock({ block }: { block: Block }) {
   if (!block.heading && !block.text) return null;
   return (
     <section className="bg-[#0d0d0d] text-white px-10 py-20 grid grid-cols-2 gap-20 items-start">
       <div>
-        {block.heading && <p className="text-[clamp(24px,3vw,40px)] font-bold leading-[1.2] mb-6">{block.heading}</p>}
+        {block.heading && <p className="heading text-[clamp(24px,3vw,40px)] font-bold leading-[1.2] mb-6">{block.heading}</p>}
         {block.images?.length > 0 && (
           <div className="flex mb-6">
             {block.images.slice(0, 5).map((url, i) => (

@@ -13,7 +13,7 @@ export default function AboutIntro({ section }: { section: any }) {
               <span className="text-sm text-gray-500">{section.shortDescription}</span>
             </div>
           )}
-          <h2 className="text-4xl md:text-5xl font-bold leading-tight">{section.title}</h2>
+          <h2 className="heading text-4xl md:text-5xl font-bold leading-tight">{section.title}</h2>
         </div>
         <div className="space-y-4 text-gray-600 text-lg leading-relaxed lg:pt-4">
           {section.description?.split("\n").filter(Boolean).map((p: string, i: number) => (
@@ -27,7 +27,7 @@ export default function AboutIntro({ section }: { section: any }) {
         <div className="flex flex-wrap gap-8 items-center pt-12 border-t border-gray-100">
           {badges.map((badge, i) => (
             <div key={i} className="flex flex-col items-center gap-1 text-center">
-              <span className="text-2xl font-bold">{badge.content}</span>
+              <span className="heading text-2xl font-bold">{badge.content}</span>
               <span className="text-xs text-gray-500 uppercase tracking-widest">{badge.title}</span>
             </div>
           ))}

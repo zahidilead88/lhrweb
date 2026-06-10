@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
+const rateLimit = require("express-rate-limit");
 
 dotenv.config();
 
@@ -10,6 +11,11 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 app.use(cors());
+
+// Stripe webhook needs raw body — must be before express.json()
+const { router: subscriptionRouter, webhookHandler } = require("./routes/subscriptions");
+app.post("/api/subscriptions/webhook", express.raw({ type: "application/json" }), webhookHandler);
+
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
@@ -50,6 +56,28 @@ app.use("/api/services", serviceRoutes);
 
 const leadRoutes = require("./routes/leads");
 app.use("/api/leads", leadRoutes);
+
+const builderRoutes = require("./routes/builder");
+// Rate limit AI generation endpoints to 5 requests per minute per IP
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { message: "Too many AI generation requests. Please wait before trying again." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/builder/generate", aiLimiter);
+app.use("/api/builder/generate-page", aiLimiter);
+app.use("/api/builder/regenerate-block", aiLimiter);
+app.use("/api/builder", builderRoutes);
+
+const footerRoutes = require("./routes/footer");
+app.use("/api/footer", footerRoutes);
+
+const exportRoutes = require("./routes/export");
+app.use("/api/export", exportRoutes);
+
+app.use("/api/subscriptions", subscriptionRouter);
 
 // ── Normalise a stored page slug to a clean identifier ─────────────────────
 // Old data used URL paths like "/", "/projects", "/secvices" as slugs.
@@ -96,6 +124,13 @@ mongoose
         console.log(`Dropped old sections index: ${idxName}`);
       } catch (_) { /* already gone */ }
     }
+
+    // ── 1.5. Drop legacy unique index on builderprojects ──────────────────
+    try {
+      const builderprojects = db.collection("builderprojects");
+      await builderprojects.dropIndex("userId_1");
+      console.log("Dropped legacy unique index userId_1 on builderprojects");
+    } catch (_) { /* already gone */ }
 
     // ── 2. Fix page slugs in the pages collection ─────────────────────────
     const allPages = await pages.find({}).toArray();
@@ -233,5 +268,8 @@ mongoose
 
   })
   .catch((err) => console.error(err));
+
+const errorHandler = require("./middleware/errorHandler");
+app.use(errorHandler);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

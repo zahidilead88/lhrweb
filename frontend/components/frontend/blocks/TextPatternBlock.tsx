@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import Image from "next/image";
 
 interface Block {
@@ -15,7 +18,7 @@ interface Block {
 }
 
 const IMG = (url: string) =>
-  url.startsWith("http") ? url : `http://localhost:8000/${url}`;
+  url.startsWith("http") ? url : `${API}/${url}`;
 
 export default function TextPatternBlock({ block }: { block: Block }) {
   const word = block.meta?.patternText || block.heading || "PATTERN";
@@ -26,7 +29,7 @@ export default function TextPatternBlock({ block }: { block: Block }) {
           {Array.from({ length: 6 }).map((_, i) => (
             <p 
               key={i} 
-              className={`text-[clamp(40px,7vw,96px)] font-black leading-[0.9] tracking-[-0.03em] mb-1 whitespace-nowrap transition-colors duration-300 ${
+              className={`heading text-[clamp(40px,7vw,96px)] font-black leading-[0.9] tracking-[-0.03em] mb-1 whitespace-nowrap transition-colors duration-300 ${
                 i % 2 === 0 ? "text-white" : "text-transparent"
               }`}
               style={{ WebkitTextStroke: i % 2 === 0 ? "none" : "1px rgba(255,255,255,0.3)" }}

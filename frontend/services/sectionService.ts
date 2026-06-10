@@ -1,4 +1,5 @@
-const API_URL = "http://localhost:8000/api/sections";
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = `${API}/api/sections`;
 
 export interface Section {
   _id: string;

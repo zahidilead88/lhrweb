@@ -1,5 +1,8 @@
 "use client";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -17,7 +20,7 @@ const BlogDetails = () => {
     setRole(storedRole);
 
     const fetchBlog = async () => {
-      const res = await fetch(`http://localhost:8000/api/blogs/${id}`);
+      const res = await fetch(`${API}/api/blogs/${id}`);
       const data = await res.json();
       setBlog(data);
     };
@@ -28,7 +31,7 @@ const BlogDetails = () => {
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch(`http://localhost:8000/api/blogs/${id}/comments`, {
+    const res = await fetch(`${API}/api/blogs/${id}/comments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ comment }),
@@ -48,7 +51,7 @@ const BlogDetails = () => {
     if (!reply) return;
 
     const res = await fetch(
-      `http://localhost:8000/api/blogs/${id}/comments/${commentId}/replies`,
+      `${API}/api/blogs/${id}/comments/${commentId}/replies`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,7 +73,7 @@ const BlogDetails = () => {
     <div className="w-[90%] mx-auto pt-10">
       {blog.thumbnail ? (
         <Image
-          src={`http://localhost:8000/${blog.thumbnail}`}
+          src={`${API}/${blog.thumbnail}`}
           alt="Thumbnail"
           width={800}
           height={400}
@@ -81,12 +84,12 @@ const BlogDetails = () => {
       )}
 
       <div className="p-6 max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2">{blog.title}</h1>
+        <h1 className="heading text-3xl font-bold mb-2">{blog.title}</h1>
         <p className="mb-6">{blog.content}</p>
 
         <hr className="my-4" />
 
-        <h2 className="text-xl font-semibold mb-2">Comments</h2>
+        <h2 className="heading text-xl font-semibold mb-2">Comments</h2>
         {blog.comments?.length > 0 ? (
           <ul className="space-y-4">
             {blog.comments.map((c: any) => (

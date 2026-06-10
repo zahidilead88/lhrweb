@@ -10,7 +10,7 @@ const HomeFaq = ({ section }: { section: any }) => {
   return (
     <div className="px-6 md:px-10 lg:px-16 py-24">
       {section.title && (
-        <h2 className="text-4xl md:text-5xl font-bold mb-12">{section.title}</h2>
+        <h2 className="heading text-4xl md:text-5xl font-bold mb-12">{section.title}</h2>
       )}
       <div className="max-w-3xl mx-auto divide-y divide-gray-200">
         {section?.accordion?.map((item: any, index: number) => (

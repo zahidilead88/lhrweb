@@ -23,13 +23,13 @@ export default function AboutTestimonials({ section }: { section: any }) {
           {section.shortDescription || "Testimonials"}
         </span>
       </div>
-      <h2 className="text-4xl md:text-5xl font-bold mb-16 max-w-md leading-tight">
+      <h2 className="heading text-4xl md:text-5xl font-bold mb-16 max-w-md leading-tight">
         {section.title || "People love us"}
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
         {/* Quote */}
-        <blockquote className="text-2xl md:text-3xl font-medium leading-snug">
+        <blockquote className="heading text-2xl md:text-3xl font-medium leading-snug">
           "{current.quote}"
         </blockquote>
 

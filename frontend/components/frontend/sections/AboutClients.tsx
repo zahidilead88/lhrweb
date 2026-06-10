@@ -1,3 +1,5 @@
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function AboutClients({ section }: { section: any }) {
   if (!section) return null;
   const clients: { title: string; content: string }[] = section.accordion || [];
@@ -12,7 +14,7 @@ export default function AboutClients({ section }: { section: any }) {
               <span className="text-sm text-gray-400">{section.shortDescription}</span>
             </div>
           )}
-          <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+          <h2 className="heading text-4xl md:text-5xl font-bold leading-tight">
             {section.title || "We work with ambitious businesses."}
           </h2>
           {section.description && (
@@ -29,7 +31,7 @@ export default function AboutClients({ section }: { section: any }) {
               >
                 {client.content ? (
                   <img
-                    src={client.content.startsWith("http") ? client.content : `http://localhost:8000/${client.content}`}
+                    src={client.content.startsWith("http") ? client.content : `${API}/${client.content}`}
                     alt={client.title}
                     className="max-h-8 object-contain filter invert opacity-70 hover:opacity-100 transition-opacity"
                   />

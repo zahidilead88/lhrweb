@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import PageSections from "@/components/frontend/PageSections";
 import BlockRenderer from "@/components/frontend/BlockRenderer";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 async function fetchPage() {
   try {
-    const res = await fetch("http://localhost:8000/api/pages/home", { cache: "no-store" });
+    const res = await fetch(`${API}/api/pages/home`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json();
   } catch {
@@ -38,7 +40,9 @@ export default async function HomePage() {
           dangerouslySetInnerHTML={{ __html: page.schema }}
         />
       )}
+      {/* All CMS sections (including home-banner) rendered in order */}
       <PageSections page="home" initialData={page ?? undefined} />
+      {/* Block-editor sections from the Pages admin */}
       {page?.contentSections
         ?.filter((s: any) => s.enabled !== false)
         .sort((a: any, b: any) => a.order - b.order)

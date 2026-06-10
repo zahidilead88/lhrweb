@@ -1,394 +1,168 @@
 "use client";
 
+const API = process.env.NEXT_PUBLIC_API_URL || `${API}`;
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 
-// ── Types ──────────────────────────────────────────────────────────────────
-
-type BlockType =
-  | "hero"
-  | "intro"
-  | "image-full"
-  | "image-2col"
-  | "video"
-  | "pull-quote"
-  | "carousel"
-  | "media-grid"
-  | "text-pattern";
+type BlockType = "hero" | "intro" | "image-full" | "image-2col" | "video" | "pull-quote" | "carousel" | "media-grid" | "text-pattern";
 
 interface Block {
-  _id?: string;
-  type: BlockType;
-  heading: string;
-  subheading: string;
-  text: string;
-  images: string[];
-  videoUrl: string;
-  meta: Record<string, string>;
-  order: number;
+  _id?: string; type: BlockType; heading: string; subheading: string; text: string;
+  images: string[]; videoUrl: string; meta: Record<string, string>; order: number;
 }
 
-interface Project {
-  _id: string;
-  title: string;
-  image: string;
-  shortDescription: string;
-  blocks?: Block[];
-}
+interface Project { _id: string; title: string; image: string; shortDescription: string; blocks?: Block[] }
 
-const BLOCK_TYPES: BlockType[] = [
-  "hero",
-  "intro",
-  "image-full",
-  "image-2col",
-  "video",
-  "pull-quote",
-  "carousel",
-  "media-grid",
-  "text-pattern",
-];
+const BLOCK_TYPES: BlockType[] = ["hero","intro","image-full","image-2col","video","pull-quote","carousel","media-grid","text-pattern"];
 
 const BLOCK_LABELS: Record<BlockType, string> = {
-  hero: "Hero",
-  intro: "Intro",
-  "image-full": "Image — Full Width",
-  "image-2col": "Image — 2 Column",
-  video: "Video",
-  "pull-quote": "Pull Quote",
-  carousel: "Carousel",
-  "media-grid": "Media Grid",
-  "text-pattern": "Text Pattern",
-};
-
-const BLOCK_COLORS: Record<BlockType, string> = {
-  hero: "bg-purple-100 text-purple-800",
-  intro: "bg-blue-100 text-blue-800",
-  "image-full": "bg-green-100 text-green-800",
-  "image-2col": "bg-teal-100 text-teal-800",
-  video: "bg-orange-100 text-orange-800",
-  "pull-quote": "bg-pink-100 text-pink-800",
-  carousel: "bg-yellow-100 text-yellow-800",
-  "media-grid": "bg-indigo-100 text-indigo-800",
-  "text-pattern": "bg-gray-200 text-gray-800",
+  hero: "Hero", intro: "Intro", "image-full": "Image — Full Width", "image-2col": "Image — 2 Column",
+  video: "Video", "pull-quote": "Pull Quote", carousel: "Carousel", "media-grid": "Media Grid", "text-pattern": "Text Pattern",
 };
 
 function makeBlock(type: BlockType, order: number): Block {
-  return {
-    type,
-    heading: "",
-    subheading: "",
-    text: "",
-    images: [],
-    videoUrl: "",
-    meta: {},
-    order,
-  };
+  return { type, heading: "", subheading: "", text: "", images: [], videoUrl: "", meta: {}, order };
 }
-
-// ── Image upload helper ────────────────────────────────────────────────────
 
 async function uploadFile(file: File): Promise<string> {
-  const fd = new FormData();
-  fd.append("file", file);
-  const res = await fetch("http://localhost:8000/api/upload", {
-    method: "POST",
-    body: fd,
-  });
+  const fd = new FormData(); fd.append("file", file);
+  const res = await fetch(`${API}/api/upload`, { method: "POST", body: fd });
   if (!res.ok) throw new Error("Upload failed");
-  const data = await res.json();
-  return data.url as string;
+  return (await res.json()).url as string;
 }
 
-// ── Thumbnail strip ────────────────────────────────────────────────────────
-
-function Thumbnails({
-  images,
-  onRemove,
-}: {
-  images: string[];
-  onRemove: (idx: number) => void;
-}) {
+function Thumbnails({ images, onRemove }: { images: string[]; onRemove: (i: number) => void }) {
   if (!images.length) return null;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "8px" }}>
+    <div className="flex flex-wrap gap-2 mt-2">
       {images.map((url, i) => (
-        <div key={i} style={{ position: "relative" }}>
-          <img
-            src={`http://localhost:8000/${url}`}
-            alt=""
-            style={{ width: "72px", height: "72px", objectFit: "cover", borderRadius: "8px", border: "1px solid #e5e7eb" }}
-          />
-          <button
-            type="button"
-            onClick={() => onRemove(i)}
-            style={{
-              position: "absolute",
-              top: "-6px",
-              right: "-6px",
-              background: "#ef4444",
-              color: "white",
-              border: "none",
-              borderRadius: "9999px",
-              width: "18px",
-              height: "18px",
-              fontSize: "11px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              lineHeight: 1,
-            }}
-          >
-            ×
-          </button>
+        <div key={i} className="relative">
+          <img src={url.startsWith("http") ? url : `${API}/${url}`} alt=""
+            className="w-16 h-16 object-cover rounded-lg" style={{ border: "1px solid rgba(255,255,255,0.1)" }} />
+          <button type="button" onClick={() => onRemove(i)}
+            className="absolute -top-1.5 -right-1.5 w-[18px] h-[18px] flex items-center justify-center rounded-full text-[11px]"
+            style={{ background: "#ef4444", color: "white", border: "none" }}>×</button>
         </div>
       ))}
     </div>
   );
 }
 
-// ── UploadButton ───────────────────────────────────────────────────────────
-
-function UploadButton({
-  label,
-  onUploaded,
-  multiple,
-}: {
-  label: string;
-  onUploaded: (url: string) => void;
-  multiple?: boolean;
-}) {
+function UploadButton({ label, onUploaded, multiple }: { label: string; onUploaded: (url: string) => void; multiple?: boolean }) {
   const ref = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setUploading(true);
-    try {
-      for (const f of files) {
-        const url = await uploadFile(f);
-        onUploaded(url);
-      }
-    } catch {
-      alert("Upload failed");
-    } finally {
-      setUploading(false);
-      if (ref.current) ref.current.value = "";
-    }
+    try { for (const f of files) { onUploaded(await uploadFile(f)); } }
+    catch { alert("Upload failed"); }
+    finally { setUploading(false); if (ref.current) ref.current.value = ""; }
   };
-
   return (
     <>
-      <input
-        ref={ref}
-        type="file"
-        accept="image/*"
-        multiple={multiple}
-        style={{ display: "none" }}
-        onChange={handleChange}
-      />
-      <button
-        type="button"
-        disabled={uploading}
-        onClick={() => ref.current?.click()}
-        style={{
-          fontSize: "12px",
-          padding: "6px 12px",
-          background: uploading ? "#9ca3af" : "#1f2937",
-          color: "white",
-          border: "none",
-          borderRadius: "6px",
-          cursor: uploading ? "not-allowed" : "pointer",
-        }}
-      >
+      <input ref={ref} type="file" accept="image/*" multiple={multiple} className="hidden" onChange={handleChange} />
+      <button type="button" disabled={uploading} onClick={() => ref.current?.click()}
+        className="text-[12px] px-3 py-1.5 rounded-lg"
+        style={{ background: uploading ? "rgba(255,255,255,0.05)" : "rgba(168,199,250,0.15)", color: uploading ? "#5f6368" : "#a8c7fa", border: "1px solid rgba(168,199,250,0.2)" }}>
         {uploading ? "Uploading…" : label}
       </button>
     </>
   );
 }
 
-// ── Field components ───────────────────────────────────────────────────────
-
-function TextField({
-  label,
-  value,
-  onChange,
-  multiline,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  multiline?: boolean;
-  placeholder?: string;
+function TF({ label, value, onChange, multiline, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; multiline?: boolean; placeholder?: string;
 }) {
-  const base = {
-    width: "100%",
-    padding: "8px 10px",
-    border: "1px solid #d1d5db",
-    borderRadius: "6px",
-    fontSize: "13px",
-    background: "white",
-    outline: "none",
-    boxSizing: "border-box" as const,
-  };
+  const style = { background: "#111111", border: "1px solid rgba(255,255,255,0.1)", color: "#e8eaed", borderRadius: 8, padding: "8px 10px", fontSize: 13, width: "100%", outline: "none", boxSizing: "border-box" as const };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <label style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-        {label}
-      </label>
-      {multiline ? (
-        <textarea
-          rows={3}
-          style={base}
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      ) : (
-        <input
-          type="text"
-          style={base}
-          value={value}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-        />
-      )}
+    <div className="flex flex-col gap-1">
+      <label style={{ fontSize: 11, fontWeight: 600, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
+      {multiline
+        ? <textarea rows={3} style={style} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+        : <input type="text" style={style} value={value} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+      }
     </div>
   );
 }
 
-// ── Block editor panel ─────────────────────────────────────────────────────
-
-function BlockPanel({
-  block,
-  onChange,
-}: {
-  block: Block;
-  onChange: (b: Block) => void;
-}) {
+function BlockPanel({ block, onChange }: { block: Block; onChange: (b: Block) => void }) {
   const set = (patch: Partial<Block>) => onChange({ ...block, ...patch });
-  const setMeta = (key: string, val: string) =>
-    onChange({ ...block, meta: { ...block.meta, [key]: val } });
+  const setMeta = (key: string, val: string) => onChange({ ...block, meta: { ...block.meta, [key]: val } });
   const addImage = (url: string) => set({ images: [...block.images, url] });
-  const removeImage = (i: number) =>
-    set({ images: block.images.filter((_, idx) => idx !== i) });
-
+  const removeImage = (i: number) => set({ images: block.images.filter((_, idx) => idx !== i) });
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      {/* Common fields */}
-      <TextField label="Heading" value={block.heading} onChange={(v) => set({ heading: v })} />
-      <TextField label="Subheading" value={block.subheading} onChange={(v) => set({ subheading: v })} />
-      <TextField label="Text / Body" value={block.text} onChange={(v) => set({ text: v })} multiline />
-
-      {/* Type-specific fields */}
-      {block.type === "intro" && (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
-            <TextField
-              label="Client"
-              value={block.meta?.client || ""}
-              onChange={(v) => setMeta("client", v)}
-              placeholder="Acme Corp"
-            />
-            <TextField
-              label="Industry"
-              value={block.meta?.industry || ""}
-              onChange={(v) => setMeta("industry", v)}
-              placeholder="Technology"
-            />
-            <TextField
-              label="Duration"
-              value={block.meta?.duration || ""}
-              onChange={(v) => setMeta("duration", v)}
-              placeholder="6 weeks"
-            />
-          </div>
-          <div>
-            <label style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>
-              Team Avatars
-            </label>
-            <UploadButton label="Upload Avatars" onUploaded={addImage} multiple />
-            <Thumbnails images={block.images} onRemove={removeImage} />
-          </div>
-        </>
-      )}
-
-      {block.type === "image-full" && (
+    <div className="flex flex-col gap-3">
+      <TF label="Heading" value={block.heading} onChange={(v) => set({ heading: v })} />
+      <TF label="Subheading" value={block.subheading} onChange={(v) => set({ subheading: v })} />
+      <TF label="Text / Body" value={block.text} onChange={(v) => set({ text: v })} multiline />
+      {block.type === "hero" && (
         <div>
-          <label style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>
-            Image
-          </label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>Background Image</label>
           <UploadButton label="Upload Image" onUploaded={addImage} />
           <Thumbnails images={block.images} onRemove={removeImage} />
         </div>
       )}
-
+      {block.type === "intro" && (
+        <>
+          <div className="grid grid-cols-3 gap-2">
+            <TF label="Client" value={block.meta?.client || ""} onChange={(v) => setMeta("client", v)} placeholder="Acme Corp" />
+            <TF label="Industry" value={block.meta?.industry || ""} onChange={(v) => setMeta("industry", v)} placeholder="Technology" />
+            <TF label="Duration" value={block.meta?.duration || ""} onChange={(v) => setMeta("duration", v)} placeholder="6 weeks" />
+          </div>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 600, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>Team Avatars</label>
+            <UploadButton label="Upload" onUploaded={addImage} multiple />
+            <Thumbnails images={block.images} onRemove={removeImage} />
+          </div>
+        </>
+      )}
+      {block.type === "image-full" && (
+        <div>
+          <label style={{ fontSize: 11, fontWeight: 600, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>Image</label>
+          <UploadButton label="Upload Image" onUploaded={addImage} />
+          <Thumbnails images={block.images} onRemove={removeImage} />
+        </div>
+      )}
       {block.type === "image-2col" && (
         <div>
-          <label style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>
-            Images (upload 2)
-          </label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>Images (upload 2)</label>
           <UploadButton label="Upload Images" onUploaded={addImage} multiple />
           <Thumbnails images={block.images} onRemove={removeImage} />
         </div>
       )}
-
       {block.type === "video" && (
-        <TextField
-          label="Video URL"
-          value={block.videoUrl}
-          onChange={(v) => set({ videoUrl: v })}
-          placeholder="https://… or public/uploads/video.mp4"
-        />
+        <TF label="Video URL" value={block.videoUrl} onChange={(v) => set({ videoUrl: v })} placeholder="https://… or public/uploads/video.mp4" />
       )}
-
       {(block.type === "carousel" || block.type === "media-grid") && (
         <div>
-          <label style={{ fontSize: "11px", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: "6px" }}>
-            Images
-          </label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: "#9aa0a6", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6 }}>Images</label>
           <UploadButton label="Upload Images" onUploaded={addImage} multiple />
           <Thumbnails images={block.images} onRemove={removeImage} />
         </div>
       )}
-
       {block.type === "text-pattern" && (
-        <TextField
-          label="Pattern Text (repeating word)"
-          value={block.meta?.patternText || ""}
-          onChange={(v) => setMeta("patternText", v)}
-          placeholder="RELENTLESS"
-        />
+        <TF label="Pattern Text" value={block.meta?.patternText || ""} onChange={(v) => setMeta("patternText", v)} placeholder="RELENTLESS" />
       )}
     </div>
   );
 }
 
-// ── Main page ──────────────────────────────────────────────────────────────
-
 export default function BlockEditorPage() {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
   const [project, setProject] = useState<Project | null>(null);
-  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [blocks, setBlocks]   = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]   = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [newType, setNewType] = useState<BlockType>("hero");
 
-  // Load project
   useEffect(() => {
-    fetch(`http://localhost:8000/api/projects/${id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("Not found");
-        return r.json();
-      })
+    fetch(`${API}/api/projects/${id}`)
+      .then((r) => { if (!r.ok) throw new Error("Not found"); return r.json(); })
       .then((data: Project) => {
         setProject(data);
         const sorted = (data.blocks || []).slice().sort((a, b) => a.order - b.order);
@@ -398,8 +172,6 @@ export default function BlockEditorPage() {
       .catch(() => router.replace("/admin/project"));
   }, [id, router]);
 
-  // ── Block operations ────────────────────────────────────────────────────
-
   const addBlock = () => {
     const nb = makeBlock(newType, blocks.length);
     const next = [...blocks, nb];
@@ -407,9 +179,7 @@ export default function BlockEditorPage() {
     setExpanded((prev) => new Set(prev).add(next.length - 1));
   };
 
-  const updateBlock = (idx: number, b: Block) => {
-    setBlocks((prev) => prev.map((x, i) => (i === idx ? b : x)));
-  };
+  const updateBlock = (idx: number, b: Block) => setBlocks((prev) => prev.map((x, i) => (i === idx ? b : x)));
 
   const removeBlock = (idx: number) => {
     if (!confirm("Delete this block?")) return;
@@ -429,144 +199,121 @@ export default function BlockEditorPage() {
     setBlocks(next.map((b, i) => ({ ...b, order: i })));
     setExpanded((prev) => {
       const next2 = new Set<number>();
-      prev.forEach((v) => {
-        if (v === idx) next2.add(target);
-        else if (v === target) next2.add(idx);
-        else next2.add(v);
-      });
+      prev.forEach((v) => { if (v === idx) next2.add(target); else if (v === target) next2.add(idx); else next2.add(v); });
       return next2;
     });
   };
 
   const toggleExpanded = (idx: number) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
-      return next;
-    });
+    setExpanded((prev) => { const next = new Set(prev); if (next.has(idx)) next.delete(idx); else next.add(idx); return next; });
   };
 
-  // ── Save ─────────────────────────────────────�    <div className="max-w-5xl">
+  const save = async () => {
+    setSaving(true); setMessage(null);
+    try {
+      const res = await fetch(`${API}/api/projects/${id}/blocks`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blocks }),
+      });
+      if (!res.ok) throw new Error();
+      setMessage({ type: "ok", text: "Blocks saved successfully!" });
+    } catch {
+      setMessage({ type: "err", text: "Failed to save. Please try again." });
+    } finally { setSaving(false); }
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(255,255,255,0.1)", borderTopColor: "#a8c7fa" }} />
+    </div>
+  );
+
+  return (
+    <div className="max-w-5xl space-y-6">
       {/* Header */}
-      <div className="flex items-end justify-between mb-8">
+      <div className="flex items-end justify-between">
         <div>
-          <button 
-            type="button" 
-            onClick={() => router.push("/admin/project")}
-            className="text-[11px] font-bold text-gray-400 hover:text-black uppercase tracking-widest transition-colors mb-4 flex items-center gap-2"
-          >
-            <span>←</span> Back to Projects
+          <button type="button" onClick={() => router.push("/admin/project")}
+            className="text-[11px] font-semibold uppercase tracking-wider mb-3 flex items-center gap-1.5 transition-colors"
+            style={{ color: "#9aa0a6" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#e8eaed")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#9aa0a6")}>
+            ← Back to Projects
           </button>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Project Narrative</h1>
-          <p className="text-[13px] text-gray-500 mt-2">
-            Structuring visual segments for <span className="font-bold text-black">{project?.title}</span>
+          <h1 className="text-[22px] font-semibold mb-1" style={{ color: "#e8eaed" }}>Project Blocks</h1>
+          <p className="text-[13px]" style={{ color: "#9aa0a6" }}>
+            Building narrative for <span style={{ color: "#e8eaed" }}>{project?.title}</span>
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={save} 
-            disabled={saving}
-            className="bg-black text-white px-8 py-3.5 rounded-2xl text-[14px] font-bold hover:bg-gray-800 disabled:opacity-50 transition-all shadow-sm"
-          >
-            {saving ? "Synchronizing..." : "Save Narrative"}
-          </button>
-        </div>
+        <button onClick={save} disabled={saving}
+          className="py-2.5 px-5 rounded-xl text-[13px] font-semibold"
+          style={{ background: "#a8c7fa", color: "#111111" }}>
+          {saving ? "Saving…" : "Save Blocks"}
+        </button>
       </div>
 
       {/* Status */}
       {message && (
-        <div className={`p-4 rounded-2xl text-[13px] font-medium mb-6 animate-in fade-in slide-in-from-top-2 border ${
-          message.type === "ok" ? "bg-green-50 border-green-100 text-green-600" : "bg-red-50 border-red-100 text-red-600"
-        }`}>
-          {message.type === "ok" ? "✦ " : "✕ "} {message.text}
+        <div className="px-4 py-3 rounded-xl text-[12px] flex items-center gap-2"
+          style={{ background: message.type === "ok" ? "rgba(52,211,153,0.1)" : "rgba(234,67,53,0.1)", border: `1px solid ${message.type === "ok" ? "rgba(52,211,153,0.2)" : "rgba(234,67,53,0.2)"}`, color: message.type === "ok" ? "#34d399" : "#f28b82" }}>
+          {message.type === "ok" ? "✓" : "!"} {message.text}
         </div>
       )}
 
-      {/* Add block row */}
-      <div className="flex gap-4 p-6 bg-gray-50 rounded-[2.5rem] border border-gray-100 mb-8 items-center">
+      {/* Add block */}
+      <div className="flex gap-3 items-end p-5 rounded-xl" style={{ background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.08)" }}>
         <div className="flex-1">
-          <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Segment Type</label>
-          <select
-            value={newType}
-            onChange={(e) => setNewType(e.target.value as BlockType)}
-            className="w-full px-5 py-3 bg-white border border-gray-100 rounded-2xl text-[14px] font-bold focus:outline-none focus:ring-2 focus:ring-black/5 transition-all appearance-none cursor-pointer"
-          >
-            {BLOCK_TYPES.map((t) => (
-              <option key={t} value={t}>{BLOCK_LABELS[t]}</option>
-            ))}
+          <label style={{ color: "#9aa0a6", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", display: "block", marginBottom: 6 }}>Segment Type</label>
+          <select value={newType} onChange={(e) => setNewType(e.target.value as BlockType)}
+            style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.1)", color: "#e8eaed", borderRadius: 10, padding: "10px 14px", fontSize: 13, width: "100%", outline: "none", appearance: "none" as const }}>
+            {BLOCK_TYPES.map((t) => <option key={t} value={t}>{BLOCK_LABELS[t]}</option>)}
           </select>
         </div>
-        <div className="pt-5">
-          <button
-            onClick={addBlock}
-            className="px-8 py-3 bg-black text-white rounded-2xl text-[13px] font-bold hover:bg-gray-800 transition-all shadow-md h-[48px]"
-          >
-            + Insert Segment
-          </button>
-        </div>
+        <button onClick={addBlock} className="py-2.5 px-5 rounded-xl text-[13px] font-semibold"
+          style={{ background: "rgba(168,199,250,0.15)", color: "#a8c7fa", border: "1px solid rgba(168,199,250,0.2)" }}>
+          + Add Block
+        </button>
       </div>
 
       {/* Block list */}
       {blocks.length === 0 ? (
-        <div className="py-32 bg-white rounded-[3rem] border border-gray-100 shadow-sm text-center">
-          <div className="w-16 h-16 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-2xl">✎</div>
-          <p className="text-[14px] font-bold text-gray-900 mb-2">The canvas is empty</p>
-          <p className="text-[13px] text-gray-400">Add segments above to build the project showcase.</p>
+        <div className="py-16 text-center rounded-xl" style={{ background: "#1c1c1c", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <p className="text-[14px] font-semibold mb-2" style={{ color: "#e8eaed" }}>No blocks yet</p>
+          <p className="text-[13px]" style={{ color: "#5f6368" }}>Add segments above to build the project narrative.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {blocks.map((block, idx) => {
             const isExpanded = expanded.has(idx);
             return (
-              <div 
-                key={idx} 
-                className={`bg-white rounded-3xl border transition-all duration-300 overflow-hidden ${
-                  isExpanded ? "ring-2 ring-black border-transparent shadow-xl" : "border-gray-100 hover:border-gray-200"
-                }`}
-              >
-                {/* Block header */}
-                <div 
-                  className={`px-8 py-5 flex items-center gap-6 cursor-pointer select-none transition-colors ${
-                    isExpanded ? "bg-gray-50/80" : "hover:bg-gray-50/30"
-                  }`}
-                  onClick={() => toggleExpanded(idx)}
-                >
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full tracking-wider uppercase shrink-0 ${BLOCK_COLORS[block.type]}`}>
-                      {BLOCK_LABELS[block.type]}
-                    </span>
-                    <p className="text-[14px] font-bold text-gray-900 truncate">
-                      {block.heading || (block.text ? block.text.substring(0, 60) + "..." : "Unnamed Segment")}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                    <div className="flex bg-gray-100 rounded-xl p-1">
-                      <button 
-                        onClick={() => moveBlock(idx, -1)} 
-                        disabled={idx === 0}
-                        className="p-1.5 hover:bg-white rounded-lg disabled:opacity-20 transition-all text-[12px]"
-                      >↑</button>
-                      <button 
-                        onClick={() => moveBlock(idx, 1)} 
-                        disabled={idx === blocks.length - 1}
-                        className="p-1.5 hover:bg-white rounded-lg disabled:opacity-20 transition-all text-[12px]"
-                      >↓</button>
-                    </div>
-                    <button 
-                      onClick={() => removeBlock(idx)}
-                      className="p-2.5 text-gray-300 hover:text-red-500 transition-colors"
-                    >✕</button>
-                    <div className={`ml-2 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}>
-                      <span className="text-[10px] text-gray-400 opacity-50">▼</span>
-                    </div>
+              <div key={idx} className="rounded-xl overflow-hidden transition-all"
+                style={{ background: "#1c1c1c", border: `1px solid ${isExpanded ? "rgba(168,199,250,0.2)" : "rgba(255,255,255,0.08)"}` }}>
+                <div className="px-5 py-4 flex items-center gap-4 cursor-pointer select-none"
+                  style={{ background: isExpanded ? "rgba(168,199,250,0.04)" : "transparent" }}
+                  onClick={() => toggleExpanded(idx)}>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex-shrink-0"
+                    style={{ background: "rgba(168,199,250,0.12)", color: "#a8c7fa" }}>
+                    {BLOCK_LABELS[block.type]}
+                  </span>
+                  <p className="text-[13px] flex-1 truncate" style={{ color: "#e8eaed" }}>
+                    {block.heading || block.text?.substring(0, 60) || "Untitled block"}
+                  </p>
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => moveBlock(idx, -1)} disabled={idx === 0}
+                      className="w-6 h-6 flex items-center justify-center rounded text-[12px] disabled:opacity-20 transition-colors"
+                      style={{ color: "#9aa0a6" }}>↑</button>
+                    <button onClick={() => moveBlock(idx, 1)} disabled={idx === blocks.length - 1}
+                      className="w-6 h-6 flex items-center justify-center rounded text-[12px] disabled:opacity-20 transition-colors"
+                      style={{ color: "#9aa0a6" }}>↓</button>
+                    <button onClick={() => removeBlock(idx)} className="w-7 h-7 flex items-center justify-center rounded-lg text-[14px] transition-colors"
+                      style={{ color: "rgba(255,255,255,0.2)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "#f28b82")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}>×</button>
+                    <span className="text-[10px] ml-1" style={{ color: "#5f6368" }}>{isExpanded ? "▲" : "▼"}</span>
                   </div>
                 </div>
-
-                {/* Block content */}
                 {isExpanded && (
-                  <div className="p-8 border-t border-gray-50 bg-white animate-in slide-in-from-top-4 duration-300">
+                  <div className="p-5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                     <BlockPanel block={block} onChange={(b) => updateBlock(idx, b)} />
                   </div>
                 )}
@@ -576,62 +323,11 @@ export default function BlockEditorPage() {
         </div>
       )}
 
-      {/* Bottom save */}
-      {blocks.length > 5 && (
-        <div className="mt-12 flex justify-center pb-20">
-          <button 
-            onClick={save} 
-            disabled={saving}
-            className="bg-black text-white px-12 py-5 rounded-[2rem] text-[15px] font-bold hover:bg-gray-800 disabled:opacity-50 transition-all shadow-2xl flex items-center gap-4"
-          >
-            {saving ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Synchronizing Narrative...
-              </>
-            ) : (
-              "Confirm Narrative Update"
-            )}
-          </button>
-        </div>
-      )}
-    </div>         >
-                  ✕
-                </button>
-                <span style={{ fontSize: "12px", color: "#9ca3af", marginLeft: "4px" }}>
-                  {expanded.has(idx) ? "▲" : "▼"}
-                </span>
-              </div>
-            </div>
-
-            {/* Block body */}
-            {expanded.has(idx) && (
-              <div style={{ padding: "16px" }}>
-                <BlockPanel block={block} onChange={(b) => updateBlock(idx, b)} />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom save */}
       {blocks.length > 0 && (
-        <div style={{ marginTop: "24px", display: "flex", justifyContent: "flex-end" }}>
-          <button
-            onClick={save}
-            disabled={saving}
-            style={{
-              fontSize: "13px",
-              fontWeight: 600,
-              padding: "10px 24px",
-              background: saving ? "#9ca3af" : "#111827",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: saving ? "not-allowed" : "pointer",
-            }}
-          >
-            {saving ? "Saving…" : "Save Blocks"}
+        <div className="flex justify-end pb-10">
+          <button onClick={save} disabled={saving} className="py-2.5 px-6 rounded-xl text-[13px] font-semibold"
+            style={{ background: "#a8c7fa", color: "#111111" }}>
+            {saving ? "Saving…" : "Save Changes"}
           </button>
         </div>
       )}

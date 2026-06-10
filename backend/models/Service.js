@@ -21,6 +21,7 @@ const serviceSchema = new mongoose.Schema({
   headline:        { type: String },
   description:     { type: String },
   longDescription: { type: String },
+  image:           { type: String },
   capabilities:    { type: [String], default: [] },
   process:         { type: [processSchema], default: [] },
   packages:        { type: [packageSchema], default: [] },

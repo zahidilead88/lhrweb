@@ -1,5 +1,8 @@
 "use client";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+
 import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import type { SectionExtras } from "../SectionRenderer";
@@ -72,7 +75,7 @@ const HomeProjects = ({ section, extras }: { section?: any; extras?: SectionExtr
       <div className="sticky top-0 h-screen overflow-hidden flex flex-col">
         {/* Header stays at the top */}
         <div className="flex items-center justify-between w-full px-10 pt-10">
-          <h2 className="text-4xl font-bold">Projects</h2>
+          <h2 className="heading text-4xl font-bold">Projects</h2>
           <button className="px-6 py-2 bg-white text-black rounded-full hover:bg-gray-200 transition font-medium">View All</button>
         </div>
         
@@ -85,14 +88,14 @@ const HomeProjects = ({ section, extras }: { section?: any; extras?: SectionExtr
                 className="w-[700px] h-[600px] flex-shrink-0 bg-white rounded-lg overflow-hidden relative shadow-lg"
               >
                 <Image
-                  src={`http://localhost:8000/${slide.image}`}
+                  src={`${API}/${slide.image}`}
                   alt={slide.title}
                   width={700}
                   height={500}
                   className="w-full h-full object-cover"
                 />
                 <div className="p-6 text-center absolute bottom-0 w-full bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white">
-                  <h3 className="text-2xl font-bold mb-2">{slide.title}</h3>
+                  <h3 className="heading text-2xl font-bold mb-2">{slide.title}</h3>
                   {slide.shortDescription && (
                     <p className="text-sm mb-4 text-gray-200 line-clamp-2">{slide.shortDescription}</p>
                   )}

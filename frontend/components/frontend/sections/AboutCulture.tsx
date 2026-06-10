@@ -1,3 +1,5 @@
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 export default function AboutCulture({ section }: { section: any }) {
   if (!section) return null;
 
@@ -8,7 +10,7 @@ export default function AboutCulture({ section }: { section: any }) {
         {section.image && (
           <div className="rounded-2xl overflow-hidden aspect-[4/3]">
             <img
-              src={section.image.startsWith("http") ? section.image : `http://localhost:8000/${section.image}`}
+              src={section.image.startsWith("http") ? section.image : `${API}/${section.image}`}
               alt={section.title || "Culture"}
               className="w-full h-full object-cover"
             />
@@ -23,7 +25,7 @@ export default function AboutCulture({ section }: { section: any }) {
               <span className="text-sm text-gray-500">{section.shortDescription}</span>
             </div>
           )}
-          <h2 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
+          <h2 className="heading text-4xl md:text-5xl font-bold leading-tight mb-6">
             {section.title}
           </h2>
           {section.description && (

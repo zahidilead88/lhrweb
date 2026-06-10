@@ -64,7 +64,7 @@ export default function ConversionSection() {
 
       {/* List */}
       <div className="col-span-6 flex flex-col justify-center space-y-6">
-        <h2 className="text-3xl mb-6">Start selling in no time</h2>
+        <h2 className="heading text-3xl mb-6">Start selling in no time</h2>
         {steps.map((step, i) => (
           <p
             key={i}

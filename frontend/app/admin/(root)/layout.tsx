@@ -7,85 +7,93 @@ import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
 
 const NAV_ITEMS = [
-  { href: "/admin",          label: "Dashboard",       exact: true,  permission: null        },
-  { href: "/admin/pages",    label: "Pages",           exact: false, permission: "pages"     },
-  { href: "/admin/sections", label: "Structure",       exact: false, permission: "sections"  },
-  { href: "/admin/menu",     label: "Manage Menu",     exact: false, permission: "menu"      },
-  { href: "/admin/services", label: "Offerings",       exact: false, permission: "services"  },
-  { href: "/admin/blog",     label: "Manage Blogs",    exact: false, permission: "blog"      },
-  { href: "/admin/project",  label: "Manage Projects", exact: false, permission: "projects"  },
-  { href: "/admin/leads",    label: "Leads",           exact: false, permission: null         },
+  { href: "/admin",          label: "Dashboard",       exact: true,  permission: null         },
+  { href: "/admin/pages",    label: "Pages",           exact: false, permission: "pages"      },
+  { href: "/admin/sections", label: "Structure",       exact: false, permission: "sections"   },
+  { href: "/admin/menu",     label: "Manage Menu",     exact: false, permission: "menu"       },
+  { href: "/admin/services", label: "Offerings",       exact: false, permission: "services"   },
+  { href: "/admin/blog",     label: "Manage Blogs",    exact: false, permission: "blog"       },
+  { href: "/admin/project",  label: "Manage Projects", exact: false, permission: "projects"   },
+  { href: "/admin/footer",   label: "Manage Footer",   exact: false, permission: "menu"       },
+  { href: "/admin/leads",    label: "Leads",           exact: false, permission: null          },
   { href: "/admin/users",    label: "Users",           exact: false, permission: "admin-only" },
+  { href: "/admin/sites",    label: "Builder Sites",   exact: false, permission: "admin-only" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const router     = useRouter();
-  const pathname   = usePathname();
-  const newCount   = useAppSelector((s) => s.leads.newCount);
-  const [loading, setLoading]           = useState(true);
-  const [role, setRole]                 = useState<string>("user");
-  const [permissions, setPermissions]   = useState<string[]>([]);
+  const router   = useRouter();
+  const pathname = usePathname();
+  const newCount = useAppSelector((s) => s.leads.newCount);
+  const [loading, setLoading]         = useState(true);
+  const [role, setRole]               = useState<string>("user");
+  const [permissions, setPermissions] = useState<string[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) { router.replace("/admin/login"); return; }
-
-    const storedRole  = localStorage.getItem("role") || "user";
-    const storedPerms = JSON.parse(localStorage.getItem("permissions") || "[]");
+    const storedRole = localStorage.getItem("role") || "user";
+    if (storedRole !== "admin") { router.replace("/dashboard"); return; }
     setRole(storedRole);
-    setPermissions(storedPerms);
+    setPermissions(JSON.parse(localStorage.getItem("permissions") || "[]"));
     setLoading(false);
   }, [pathname, router]);
 
   const canAccess = (permission: string | null): boolean => {
     if (role === "admin") return true;
-    if (permission === null) return true;        // Dashboard always visible
-    if (permission === "admin-only") return false; // Users page: admin only
+    if (permission === null) return true;
+    if (permission === "admin-only") return false;
     return permissions.includes(permission);
   };
 
-  // Redirect if the user navigates directly to a restricted page
   useEffect(() => {
     if (loading) return;
     const current = NAV_ITEMS.find((item) =>
       item.exact ? pathname === item.href : (pathname.startsWith(item.href) && item.href !== "/admin")
     );
-    if (current && !canAccess(current.permission)) {
-      router.replace("/admin");
-    }
+    if (current && !canAccess(current.permission)) router.replace("/admin");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, pathname]);
 
   if (loading) return null;
 
   return (
-    <div className="flex h-screen bg-[#f8f9fa]">
-      {/* Sidebar */}
-      <aside className="w-[18%] bg-white border-r border-gray-100 flex flex-col p-6 fixed top-0 bottom-0 z-50">
-        <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-lg">L</span>
+    <div className="flex h-screen" style={{ background: "#111111" }}>
+      {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
+      <aside
+        className="w-[220px] flex flex-col fixed top-0 bottom-0 z-50 select-none"
+        style={{ background: "#111111", borderRight: "1px solid rgba(255,255,255,0.08)" }}
+      >
+        {/* Brand */}
+        <div className="h-14 flex items-center px-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#a8c7fa" }}>
+              <span className="text-[11px] font-black text-black">L</span>
+            </div>
+            <span className="text-[14px] font-semibold" style={{ color: "#e8eaed" }}>LHRWEB</span>
           </div>
-          <h2 className="text-lg font-bold tracking-tight">LHRWEB</h2>
         </div>
-        
-        <nav className="flex flex-col gap-1.5">
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2">
           {NAV_ITEMS.filter((item) => canAccess(item.permission)).map(({ href, label, exact }) => {
-            const active = exact ? pathname === href : pathname.startsWith(href);
+            const active  = exact ? pathname === href : pathname.startsWith(href);
             const isLeads = href === "/admin/leads";
             return (
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 ${
-                  active
-                    ? "bg-black text-white shadow-sm translate-x-1"
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                }`}
+                className="flex items-center justify-between px-3 py-2 rounded-lg text-[13px] transition-all mb-0.5"
+                style={{
+                  color:      active ? "#a8c7fa" : "#9aa0a6",
+                  background: active ? "rgba(168,199,250,0.1)" : "transparent",
+                  fontWeight: active ? 500 : 400,
+                }}
+                onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "#e8eaed"; }}
+                onMouseLeave={(e) => { if (!active) { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#9aa0a6"; } }}
               >
                 {label}
                 {isLeads && newCount > 0 && (
-                  <span className={`min-w-[20px] h-5 text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none ${active ? "bg-white text-black" : "bg-red-500 text-white"}`}>
+                  <span className="min-w-[18px] h-[18px] text-[10px] font-bold rounded-full flex items-center justify-center px-1" style={{ background: "#ea4335", color: "#fff" }}>
                     {newCount > 99 ? "99+" : newCount}
                   </span>
                 )}
@@ -94,16 +102,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        <div className="mt-auto pt-6 border-t border-gray-50">
-          <p className="px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Support</p>
-          <Link href="/admin/help" className="flex items-center px-4 py-2 text-[13px] text-gray-500 hover:text-black transition-colors">Documentation</Link>
+        {/* Bottom utility links */}
+        <div className="py-3 px-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          {[
+            { label: "Documentation", href: "/admin/help" },
+          ].map(({ label, href }) => (
+            <Link key={label} href={href}
+              className="flex items-center px-3 py-2 rounded-lg text-[13px] transition-all"
+              style={{ color: "#9aa0a6" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "#e8eaed"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "#9aa0a6"; }}
+            >
+              {label}
+            </Link>
+          ))}
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className="w-[82%] ml-[18%] flex flex-col h-full overflow-hidden">
+      {/* ── Main ──────────────────────────────────────────────────────────────── */}
+      <div className="flex-1 ml-[220px] flex flex-col h-full overflow-hidden">
         <TopBar />
-        <main className="flex-1 overflow-y-auto bg-[#f8f9fa] p-8 mt-[64px]">
+        <main className="flex-1 overflow-y-auto p-8 mt-14" style={{ background: "#111111" }}>
           <div className="max-w-[1400px] mx-auto">
             {children}
           </div>

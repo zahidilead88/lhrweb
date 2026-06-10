@@ -4,6 +4,7 @@ import BlockRenderer from "./BlockRenderer";
 
 // All sections consolidated into one folder
 import HomeBanner from "./sections/HomeBanner";
+import VoilaBanner from "./sections/VoilaBanner";
 import HomeProjects from "./sections/HomeProjects";
 import BuildFuture from "./sections/BuildFuture";
 import OurExpertise from "./sections/OurExpertise";
@@ -36,8 +37,12 @@ import BrandFeatures from "./sections/BrandFeatures";
 export interface SectionExtras { blogs?: any[]; projects?: any[] }
 
 // Registry: section key → component
+// VoilaBanner doesn't use section props — wrap it so it fits the registry signature
+const VoilaBannerWrapper: ComponentType<{ section: any; extras?: SectionExtras }> = () => <VoilaBanner />;
+
 const REGISTRY: Record<string, ComponentType<{ section: any; extras?: SectionExtras }>> = {
   // ── Home ──────────────────────────────────────────────────
+  "voila-banner":       VoilaBannerWrapper,
   "home-banner":        HomeBanner,
   "home-projects":      HomeProjects,
   "build-future":       BuildFuture,
@@ -74,13 +79,25 @@ const REGISTRY: Record<string, ComponentType<{ section: any; extras?: SectionExt
 
 export default function SectionRenderer({ section, extras }: { section: any; extras?: { blogs?: any[]; projects?: any[] } }) {
   if (section.enabled === false) return null;
+
   const Component = REGISTRY[section?.key];
   const hasBlocks = Array.isArray(section.blocks) && section.blocks.length > 0;
-  if (!Component && !hasBlocks) return null;
-  return (
-    <>
-      {Component && <Component section={section} extras={extras} />}
-      {hasBlocks && <BlockRenderer blocks={section.blocks} />}
-    </>
-  );
+
+  // If this section has a registered component, render it (+ any blocks underneath)
+  if (Component) {
+    return (
+      <>
+        <Component section={section} extras={extras} />
+        {hasBlocks && <BlockRenderer blocks={section.blocks} />}
+      </>
+    );
+  }
+
+  // If no registered component but has content blocks, render those
+  if (hasBlocks) {
+    return <BlockRenderer blocks={section.blocks} />;
+  }
+
+  // Section exists in DB but no component registered for its key — nothing to show
+  return null;
 }

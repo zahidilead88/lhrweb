@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -32,7 +35,7 @@ export default function FeaturedBlogs({ section, extras }: { section: any; extra
                 {section.shortDescription}
               </p>
             )}
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
+            <h2 className="heading text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
               {section.title || "Latest Thinking"}
             </h2>
           </div>
@@ -57,7 +60,7 @@ export default function FeaturedBlogs({ section, extras }: { section: any; extra
               <div className="relative aspect-video overflow-hidden rounded-3xl bg-white shadow-sm border border-gray-100">
                 {blog.thumbnail ? (
                   <Image
-                    src={`http://localhost:8000/${blog.thumbnail}`}
+                    src={`${API}/${blog.thumbnail}`}
                     alt={blog.title}
                     fill
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
@@ -79,7 +82,7 @@ export default function FeaturedBlogs({ section, extras }: { section: any; extra
                      {blog.createdAt ? new Date(blog.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}
                    </span>
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-gray-900 group-hover:text-gray-600 transition-colors leading-snug">
+                <h3 className="heading text-xl md:text-2xl font-bold text-gray-900 group-hover:text-gray-600 transition-colors leading-snug">
                   {blog.title}
                 </h3>
                 <p className="text-gray-500 text-[14px] leading-relaxed line-clamp-2">

@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import Image from "next/image";
 
 interface Block {
@@ -15,7 +18,7 @@ interface Block {
 }
 
 const IMG = (url: string) =>
-  url.startsWith("http") ? url : `http://localhost:8000/${url}`;
+  url.startsWith("http") ? url : `${API}/${url}`;
 
 export default function HeroBlock({ block }: { block: Block }) {
   const img = block.images?.[0];
@@ -33,7 +36,7 @@ export default function HeroBlock({ block }: { block: Block }) {
         )}
       </div>
       {block.heading && (
-        <h1 className="text-[clamp(48px,10vw,120px)] font-black leading-[0.95] tracking-[-0.03em] mb-12 text-white">
+        <h1 className="heading text-[clamp(48px,10vw,120px)] font-black leading-[0.95] tracking-[-0.03em] mb-12 text-white">
           {block.heading}
         </h1>
       )}

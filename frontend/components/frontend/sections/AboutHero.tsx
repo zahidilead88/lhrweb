@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import Image from "next/image";
 import Link from "next/link";
 import type { SectionExtras } from "../../SectionRenderer";
@@ -12,7 +15,7 @@ export default function AboutHero({ section, extras }: { section: any; extras?: 
 
   return (
     <section className="min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-6 overflow-hidden bg-white">
-      <h1 className="text-5xl md:text-7xl font-bold text-center max-w-2xl leading-tight mb-16">
+      <h1 className="heading text-5xl md:text-7xl font-bold text-center max-w-2xl leading-tight mb-16">
         {section.title || "Good design makes life better."}
       </h1>
 
@@ -29,7 +32,7 @@ export default function AboutHero({ section, extras }: { section: any; extras?: 
               }}
             >
               <Image
-                src={`http://localhost:8000/${p.image}`}
+                src={`${API}/${p.image}`}
                 alt={p.title}
                 fill
                 className="object-cover"

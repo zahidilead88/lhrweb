@@ -2,16 +2,18 @@ const express = require("express");
 const router = express.Router();
 const Blog = require("../models/Blog");
 const upload = require("../middleware/upload");
+const { auth, requireAdmin } = require("../middleware/auth");
 
 // Create blog (admin)
 router.post(
   "/",
+  auth, requireAdmin,
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "fullImage", maxCount: 1 },
   ]),
   async (req, res) => {
-    const { title, content, tags } = req.body;
+    const { title, content, tags, featuredPages } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -20,6 +22,7 @@ router.post(
     const thumbnail = req.files?.thumbnail?.[0]?.path;
     const fullImage = req.files?.fullImage?.[0]?.path;
     const processedTags = typeof tags === "string" ? tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
+    const processedFeaturedPages = typeof featuredPages === "string" ? featuredPages.split(",").map((p) => p.trim()).filter(Boolean) : [];
 
     const blog = await Blog.create({
       title,
@@ -27,6 +30,7 @@ router.post(
       thumbnail,
       fullImage,
       tags: processedTags,
+      featuredPages: processedFeaturedPages,
     });
 
     res.status(201).json(blog);
@@ -55,13 +59,26 @@ router.get("/:id", async (req, res) => {
 });
 
 // PUT /api/blogs/:id - Update blog
-router.put("/:id", async (req, res) => {
+router.put("/:id", auth, requireAdmin, async (req, res) => {
   try {
-    const { title, content, tags } = req.body;
+    const { title, content, tags, featuredPages } = req.body;
     const processedTags = typeof tags === "string" ? tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined;
+    
+    let processedFeaturedPages = undefined;
+    if (typeof featuredPages === "string") {
+      processedFeaturedPages = featuredPages.split(",").map((p) => p.trim()).filter(Boolean);
+    } else if (Array.isArray(featuredPages)) {
+      processedFeaturedPages = featuredPages.map((p) => String(p).trim()).filter(Boolean);
+    }
+
     const updated = await Blog.findByIdAndUpdate(
       req.params.id,
-      { title, content, ...(processedTags !== undefined && { tags: processedTags }) },
+      { 
+        title, 
+        content, 
+        ...(processedTags !== undefined && { tags: processedTags }),
+        ...(processedFeaturedPages !== undefined && { featuredPages: processedFeaturedPages })
+      },
       { new: true }
     );
 
@@ -77,7 +94,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /api/blogs/:id - Delete blog
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, requireAdmin, async (req, res) => {
   try {
     const deleted = await Blog.findByIdAndDelete(req.params.id);
     if (!deleted) {

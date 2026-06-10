@@ -1,4 +1,7 @@
 "use client";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -48,7 +51,7 @@ export default function BlogListing({ extras }: { section?: any; extras?: { blog
             <button
               type="button"
               onClick={() => setActive("all")}
-              className={`text-2xl md:text-3xl font-bold transition-colors leading-none ${
+              className={`heading text-2xl md:text-3xl font-bold transition-colors leading-none ${
                 activeCategory === "all" ? "text-black" : "text-gray-300 hover:text-gray-500"
               }`}
             >
@@ -59,7 +62,7 @@ export default function BlogListing({ extras }: { section?: any; extras?: { blog
                 key={tag}
                 type="button"
                 onClick={() => setActive(tag)}
-                className={`text-2xl md:text-3xl font-bold transition-colors leading-none ${
+                className={`heading text-2xl md:text-3xl font-bold transition-colors leading-none ${
                   activeCategory === tag ? "text-black" : "text-gray-300 hover:text-gray-500"
                 }`}
               >
@@ -79,7 +82,7 @@ export default function BlogListing({ extras }: { section?: any; extras?: { blog
               {blog.thumbnail && (
                 <div className="aspect-[16/9] rounded-2xl overflow-hidden mb-4 relative bg-gray-100">
                   <Image
-                    src={`http://localhost:8000/${blog.thumbnail}`}
+                    src={`${API}/${blog.thumbnail}`}
                     alt={blog.title}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -93,7 +96,7 @@ export default function BlogListing({ extras }: { section?: any; extras?: { blog
                   ))}
                 </div>
               )}
-              <h2 className="font-semibold text-lg mb-2 group-hover:underline leading-snug">{blog.title}</h2>
+              <h2 className="heading font-semibold text-lg mb-2 group-hover:underline leading-snug">{blog.title}</h2>
               <p className="text-sm text-gray-500 line-clamp-2">{blog.content}</p>
             </Link>
           ))}

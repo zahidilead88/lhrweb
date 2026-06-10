@@ -6,7 +6,7 @@ const BuildFuture = ({ section }: { section: any }) => {
   return (
     <div className="flex justify-between p-4 min-h-screen">
       <div className="w-[80%]">
-        <h2 className="font-almiregodisplay text-[5vw]">{section.title}</h2>
+        <h2 className="heading font-almiregodisplay text-[5vw]">{section.title}</h2>
         <p>{section.shortDescription}</p>
         <p>{section.description}</p>
       </div>
