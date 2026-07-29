@@ -4,7 +4,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 import Link from "next/link";
 import Image from "next/image";
-import type { SectionExtras } from "../../SectionRenderer";
+import type { SectionExtras } from "../SectionRenderer";
 
 interface Blog {
   _id: string;

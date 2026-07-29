@@ -1782,6 +1782,29 @@ function renderBlock(
     case "stats":        inner = <StatsBlock        c={c} color={color} st={st} onUpdate={handleUpdate} onSelectElement={handleSelectElement} />; break;
     case "custom":       inner = <CustomBlock       c={c} color={color} st={st} onUpdate={handleUpdate} onSelectElement={handleSelectElement} />; break;
     case "canvas":       inner = <CanvasBlock       c={c} color={color} st={st} onSelectElement={handleSelectElement} />; break;
+    case "html": {
+      const html = (c.html as string) ?? "";
+      const css  = (c.css  as string) ?? "";
+      const doc  = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{box-sizing:border-box;margin:0;padding:0}body{overflow:hidden}${css}</style></head><body>${html}</body></html>`;
+      inner = (
+        <div style={{ width: "100%", minHeight: 200, position: "relative", overflow: "hidden" }}>
+          <iframe
+            srcDoc={doc}
+            style={{ width: "100%", height: "100%", minHeight: 200, border: "none", display: "block" }}
+            scrolling="no"
+            onLoad={e => {
+              const iframe = e.currentTarget;
+              const body = iframe.contentDocument?.body;
+              if (body) {
+                const h = body.scrollHeight;
+                if (h > 0) iframe.style.height = `${h}px`;
+              }
+            }}
+          />
+        </div>
+      );
+      break;
+    }
     default:
       inner = (
         <div className="py-12 px-8 text-center text-gray-400 bg-gray-50 text-[13px]">

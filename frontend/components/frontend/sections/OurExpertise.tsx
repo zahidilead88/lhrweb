@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 import Image from "next/image";

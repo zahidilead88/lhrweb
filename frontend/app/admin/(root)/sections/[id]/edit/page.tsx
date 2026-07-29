@@ -1,6 +1,6 @@
 "use client";
 
-const API = process.env.NEXT_PUBLIC_API_URL || `${API}`;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { getPages, Page as PageType } from "@/services/pageService";

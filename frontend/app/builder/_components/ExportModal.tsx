@@ -3,17 +3,23 @@
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 import { useState } from "react";
-import { X, Download, Code2, Globe, Database, FileCode2, CheckCircle2 } from "lucide-react";
+import { X, Download, CheckCircle2 } from "lucide-react";
+import type { ElementNode, StyleClass, SiteTokens } from "@/types/builder";
 
 interface Props {
   projectId: string;
+  businessName?: string;
+  pageTitle?: string;
+  elements?: ElementNode[];
+  classes?: StyleClass[];
+  tokens?: SiteTokens;
   onClose: () => void;
 }
 
-type Stack    = "html" | "nextjs" | "laravel";
+type Stack    = "html-v2" | "html" | "nextjs" | "laravel";
 type Database = "none" | "mongodb" | "mysql";
 
-const STACKS: { id: Stack; label: string; desc: string; icon: string; dbs: Database[] }[] = [
+const STACKS_V1: { id: Stack; label: string; desc: string; icon: string; dbs: Database[] }[] = [
   {
     id: "html",
     label: "HTML / CSS / JS",
@@ -43,38 +49,53 @@ const DB_LABELS: Record<Database, string> = {
   mysql:   "MySQL",
 };
 
-export default function ExportModal({ projectId, onClose }: Props) {
-  const [stack,    setStack]    = useState<Stack>("nextjs");
+export default function ExportModal({
+  projectId, businessName, pageTitle, elements, classes, tokens, onClose,
+}: Props) {
+  const hasV2 = (elements?.length ?? 0) > 0;
+  const [stack,    setStack]    = useState<Stack>(hasV2 ? "html-v2" : "html");
   const [database, setDatabase] = useState<Database>("none");
   const [loading,  setLoading]  = useState(false);
   const [done,     setDone]     = useState(false);
 
-  const selectedStack = STACKS.find(s => s.id === stack)!;
+  const selectedStack = STACKS_V1.find(s => s.id === stack);
 
   function handleStackChange(s: Stack) {
     setStack(s);
-    const def = STACKS.find(x => x.id === s)!;
-    if (!def.dbs.includes(database)) setDatabase(def.dbs[0]);
+    if (s !== "html-v2") {
+      const def = STACKS_V1.find(x => x.id === s)!;
+      if (!def.dbs.includes(database)) setDatabase(def.dbs[0]);
+    }
     setDone(false);
   }
 
   async function handleDownload() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/export`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ projectId, stack, database }),
-      });
+      const token = localStorage.getItem("token");
+
+      let res: Response;
+      if (stack === "html-v2") {
+        res = await fetch(`${API}/api/export/elements`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ elements, classes, tokens, title: pageTitle, businessName }),
+        });
+      } else {
+        res = await fetch(`${API}/api/export`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ projectId, stack, database }),
+        });
+      }
+
       if (!res.ok) throw new Error("Export failed");
       const blob     = await res.blob();
       const url      = URL.createObjectURL(blob);
       const a        = document.createElement("a");
       a.href         = url;
-      a.download     = res.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1] ?? "website.zip";
+      a.download     = res.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1]
+                    ?? `${(businessName || "website").toLowerCase().replace(/\s+/g, "-")}.zip`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -107,12 +128,45 @@ export default function ExportModal({ projectId, onClose }: Props) {
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Stack selection */}
+        <div className="p-6 space-y-5">
+          {/* V2 option — shown only when V2 elements exist */}
+          {hasV2 && (
+            <div>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                Visual Builder Export
+              </p>
+              <button
+                onClick={() => handleStackChange("html-v2")}
+                className={`w-full flex items-start gap-4 p-4 rounded-xl border-2 text-left transition-all ${
+                  stack === "html-v2"
+                    ? "border-[#6344d4] bg-purple-50"
+                    : "border-gray-100 hover:border-gray-200"
+                }`}
+              >
+                <span className="text-2xl mt-0.5">✨</span>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-bold text-sm flex items-center gap-2 ${stack === "html-v2" ? "text-[#6344d4]" : "text-gray-800"}`}>
+                    Clean HTML + CSS
+                    <span className="text-[9px] font-black bg-[#6344d4] text-white px-1.5 py-0.5 rounded-full uppercase tracking-wide">V2</span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Exports your visual element tree as semantic HTML + an external style.css. Ready to host anywhere.
+                  </p>
+                </div>
+                {stack === "html-v2" && <CheckCircle2 size={18} className="text-[#6344d4] flex-shrink-0 mt-0.5" />}
+              </button>
+            </div>
+          )}
+
+          {/* V1 stacks */}
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Choose Stack</p>
+            {hasV2 && (
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                Framework Export (V1 Blocks)
+              </p>
+            )}
             <div className="grid gap-3">
-              {STACKS.map(s => (
+              {STACKS_V1.map(s => (
                 <button
                   key={s.id}
                   onClick={() => handleStackChange(s.id)}
@@ -133,8 +187,8 @@ export default function ExportModal({ projectId, onClose }: Props) {
             </div>
           </div>
 
-          {/* Database selection (hidden for html with only "none") */}
-          {selectedStack.dbs.length > 1 && (
+          {/* Database — only for V1 stacks with multiple db options */}
+          {stack !== "html-v2" && selectedStack && selectedStack.dbs.length > 1 && (
             <div>
               <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Database</p>
               <div className="flex gap-2">
@@ -155,7 +209,7 @@ export default function ExportModal({ projectId, onClose }: Props) {
             </div>
           )}
 
-          {/* What's included */}
+          {/* Includes */}
           <div className="bg-gray-50 rounded-xl p-4">
             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">What's included</p>
             <ul className="space-y-1">
@@ -196,7 +250,15 @@ export default function ExportModal({ projectId, onClose }: Props) {
 }
 
 function getIncludes(stack: Stack, db: Database): string[] {
-  const base: Record<Stack, string[]> = {
+  if (stack === "html-v2") {
+    return [
+      "index.html — semantic HTML with data-id attributes",
+      "style.css — CSS variables (tokens) + named classes + element styles",
+      "README.md — how to open and deploy",
+    ];
+  }
+
+  const base: Record<string, string[]> = {
     html: [
       "index.html + one file per page",
       "assets/style.css — full custom CSS",
@@ -226,5 +288,5 @@ function getIncludes(stack: Stack, db: Database): string[] {
       ? ["Prisma schema + client setup", "database/migrations for contacts", ".env.example with DATABASE_URL"]
       : ["Migration for contacts table", "Contact Eloquent model", ".env.example with DB_ config"],
   };
-  return [...base[stack], ...(dbExtras[db] || [])];
+  return [...(base[stack] ?? []), ...(dbExtras[db] || [])];
 }

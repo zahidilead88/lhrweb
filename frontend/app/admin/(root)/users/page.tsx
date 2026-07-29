@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Globe, Trash2, ExternalLink, Plus, FileText, Pencil } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || `${API}`;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface Website {
   _id:          string;

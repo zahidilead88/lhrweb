@@ -9,7 +9,7 @@ import {
   LayoutDashboard, CreditCard, Calendar, AlertTriangle,
 } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || `${API}`;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface Project {
   _id: string;
@@ -34,14 +34,14 @@ interface Subscription {
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const T = {
-  bg:      "#111111",
-  surface: "#1c1c1c",
-  border:  "rgba(255,255,255,0.08)",
-  text:    "#e8eaed",
-  muted:   "#9aa0a6",
-  accent:  "#a8c7fa",
-  accentBg: "rgba(168,199,250,0.1)",
-  hover:   "rgba(255,255,255,0.06)",
+  bg:       "#F8F9FA",
+  surface:  "#FFFFFF",
+  border:   "#E8EAED",
+  text:     "#202124",
+  muted:    "#5F6368",
+  accent:   "#6344d4",
+  accentBg: "rgba(99,68,212,0.08)",
+  hover:    "#F1F3F4",
 };
 
 export default function ClientDashboard() {
@@ -136,7 +136,7 @@ export default function ClientDashboard() {
 
   if (loading) return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: T.bg }}>
-      <div className="w-7 h-7 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(255,255,255,0.15)", borderTopColor: T.accent }} />
+      <div className="w-7 h-7 border-2 rounded-full animate-spin" style={{ borderColor: T.border, borderTopColor: T.accent }} />
     </div>
   );
 
@@ -150,7 +150,7 @@ export default function ClientDashboard() {
         <div className="h-14 flex items-center px-4" style={{ borderBottom: `1px solid ${T.border}` }}>
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: T.accent }}>
-              <LayoutDashboard className="w-3.5 h-3.5 text-black" />
+              <LayoutDashboard className="w-3.5 h-3.5 text-white" />
             </div>
             <span className="text-[14px] font-semibold" style={{ color: T.text }}>Client Portal</span>
           </Link>
@@ -182,7 +182,7 @@ export default function ClientDashboard() {
         {/* Bottom: plan + logout */}
         <div className="px-2 py-3" style={{ borderTop: `1px solid ${T.border}` }}>
           <div className="px-3 py-2.5 rounded-lg mb-1 flex items-center gap-2.5" style={{ background: T.hover }}>
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black flex-shrink-0" style={{ background: T.accent, color: "#111" }}>
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black flex-shrink-0" style={{ background: T.accent, color: "#fff" }}>
               {initials}
             </div>
             <div className="min-w-0">
@@ -194,7 +194,7 @@ export default function ClientDashboard() {
             onClick={handleLogout}
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all text-left mt-0.5"
             style={{ color: T.muted }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#f28b82"; (e.currentTarget as HTMLElement).style.background = "rgba(234,67,53,0.08)"; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#c5221f"; (e.currentTarget as HTMLElement).style.background = "rgba(197,34,31,0.06)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.muted; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
           >
             <LogOut className="w-4 h-4" />
@@ -220,7 +220,7 @@ export default function ClientDashboard() {
             <Link
               href="/builder?new=true"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold transition-all"
-              style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(168,199,250,0.2)` }}
+              style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(99,68,212,0.2)` }}
             >
               <Plus className="w-3.5 h-3.5" />
               New Website
@@ -266,7 +266,7 @@ export default function ClientDashboard() {
                             onClick={(e) => handleDeleteProject(proj._id, e)}
                             className="w-6 h-6 rounded-md flex items-center justify-center transition-all"
                             style={{ color: T.muted }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#f28b82"; (e.currentTarget as HTMLElement).style.background = "rgba(234,67,53,0.08)"; }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#c5221f"; (e.currentTarget as HTMLElement).style.background = "rgba(197,34,31,0.06)"; }}
                             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.muted; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                           >
                             <Trash2 className="w-3 h-3" />
@@ -290,7 +290,7 @@ export default function ClientDashboard() {
                               href={`/builder?projectId=${proj._id}&pageId=${page.id}`}
                               className="text-[11px] px-2.5 py-1 rounded-md transition-all"
                               style={{ background: T.hover, color: T.muted, border: `1px solid ${T.border}` }}
-                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.text; (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.2)"; }}
+                              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.text; (e.currentTarget as HTMLElement).style.borderColor = "#BDBDBD"; }}
                               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.muted; (e.currentTarget as HTMLElement).style.borderColor = T.border; }}
                             >
                               {page.name}
@@ -305,15 +305,15 @@ export default function ClientDashboard() {
                           href={`/site/${proj._id}`}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all"
                           style={{ background: T.hover, color: T.muted, border: `1px solid ${T.border}` }}
-                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.text; }}
-                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.muted; }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = T.text; (e.currentTarget as HTMLElement).style.background = T.hover; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = T.muted; (e.currentTarget as HTMLElement).style.background = T.hover; }}
                         >
                           <Globe className="w-3 h-3" /> View
                         </Link>
                         <Link
                           href={`/builder?projectId=${proj._id}`}
                           className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[12px] font-semibold transition-all"
-                          style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(168,199,250,0.2)` }}
+                          style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(99,68,212,0.2)` }}
                         >
                           Open Builder <ArrowUpRight className="w-3 h-3" />
                         </Link>
@@ -325,9 +325,9 @@ export default function ClientDashboard() {
                   <Link
                     href="/builder?new=true"
                     className="flex flex-col items-center justify-center gap-3 p-5 rounded-xl transition-all min-h-[200px] group"
-                    style={{ border: `1px dashed rgba(255,255,255,0.12)`, color: T.muted }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(168,199,250,0.3)"; (e.currentTarget as HTMLElement).style.color = T.accent; (e.currentTarget as HTMLElement).style.background = T.accentBg; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.12)"; (e.currentTarget as HTMLElement).style.color = T.muted; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                    style={{ border: `1px dashed ${T.border}`, color: T.muted }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(99,68,212,0.3)"; (e.currentTarget as HTMLElement).style.color = T.accent; (e.currentTarget as HTMLElement).style.background = T.accentBg; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = T.border; (e.currentTarget as HTMLElement).style.color = T.muted; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
                   >
                     <Plus className="w-6 h-6" />
                     <div className="text-center">
@@ -345,7 +345,7 @@ export default function ClientDashboard() {
                     </div>
                     <div>
                       <h2 className="text-[15px] font-semibold" style={{ color: T.text }}>Unlock Website Builder</h2>
-                      <p className="text-[12px]" style={{ color: T.muted }}>Upgrade to start building</p>
+                      <p className="text-[13px]" style={{ color: T.muted }}>Upgrade to start building</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 p-4 rounded-xl mb-5" style={{ background: T.hover }}>
@@ -358,8 +358,8 @@ export default function ClientDashboard() {
                       <div key={title} className="flex items-start gap-2">
                         <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: T.accent }} />
                         <div>
-                          <p className="text-[12px] font-semibold" style={{ color: T.text }}>{title}</p>
-                          <p className="text-[11px]" style={{ color: T.muted }}>{desc}</p>
+                          <p className="text-[13px] font-semibold" style={{ color: T.text }}>{title}</p>
+                          <p className="text-[13px]" style={{ color: T.muted }}>{desc}</p>
                         </div>
                       </div>
                     ))}
@@ -367,7 +367,7 @@ export default function ClientDashboard() {
                   <button
                     onClick={() => window.dispatchEvent(new CustomEvent("open-lead-popup"))}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold transition-all"
-                    style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(168,199,250,0.2)` }}
+                    style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(99,68,212,0.2)` }}
                   >
                     Request Builder Package <ArrowUpRight className="w-3.5 h-3.5" />
                   </button>
@@ -384,7 +384,7 @@ export default function ClientDashboard() {
                   <Link
                     href="/builder?new=true"
                     className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[13px] font-semibold"
-                    style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(168,199,250,0.2)` }}
+                    style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(99,68,212,0.2)` }}
                   >
                     <Plus className="w-3.5 h-3.5" /> Create First Site
                   </Link>
@@ -404,7 +404,7 @@ export default function ClientDashboard() {
                     <div className="flex items-center justify-between mb-4 pb-4" style={{ borderBottom: `1px solid ${T.border}` }}>
                       <div>
                         <p className="text-[18px] font-black capitalize" style={{ color: T.text }}>{subscription.plan} Plan</p>
-                        <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>
+                        <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
                           {subscription.cancelAtPeriodEnd ? "Cancels at period end" : "Renews automatically"}
                         </p>
                       </div>
@@ -412,7 +412,7 @@ export default function ClientDashboard() {
                         className="text-[11px] font-semibold px-3 py-1.5 rounded-lg uppercase tracking-wide"
                         style={subscription.status === "active"
                           ? { background: "rgba(52,211,153,0.1)", color: "#34d399" }
-                          : { background: "rgba(234,67,53,0.1)", color: "#f28b82" }}
+                          : { background: "rgba(197,34,31,0.08)", color: "#c5221f" }}
                       >
                         {subscription.status}
                       </span>
@@ -434,9 +434,9 @@ export default function ClientDashboard() {
                   </div>
 
                   {subscription.cancelAtPeriodEnd && (
-                    <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
-                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#fbbf24" }} />
-                      <p className="text-[12px]" style={{ color: "#fbbf24" }}>
+                    <div className="flex items-start gap-3 p-4 rounded-xl" style={{ background: "rgba(180,83,9,0.06)", border: "1px solid rgba(180,83,9,0.15)" }}>
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: "#b45309" }} />
+                      <p className="text-[13px]" style={{ color: "#b45309" }}>
                         Your plan is set to cancel. You can re-activate it from the billing portal before the period ends.
                       </p>
                     </div>
@@ -446,10 +446,10 @@ export default function ClientDashboard() {
                     onClick={openBillingPortal}
                     disabled={portalLoading}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-semibold transition-all"
-                    style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(168,199,250,0.2)` }}
+                    style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(99,68,212,0.2)` }}
                   >
                     {portalLoading ? (
-                      <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(168,199,250,0.3)", borderTopColor: T.accent }} />
+                      <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(99,68,212,0.2)", borderTopColor: T.accent }} />
                     ) : (
                       <><CreditCard className="w-4 h-4" /> Manage Billing & Invoices</>
                     )}
@@ -459,11 +459,11 @@ export default function ClientDashboard() {
                 <div className="p-6 rounded-xl text-center" style={{ background: T.surface, border: `1px solid ${T.border}` }}>
                   <Sparkles className="w-8 h-8 mx-auto mb-3 animate-pulse" style={{ color: T.muted }} />
                   <p className="text-[14px] font-semibold mb-1" style={{ color: T.text }}>No active subscription</p>
-                  <p className="text-[12px] mb-5" style={{ color: T.muted }}>Upgrade to unlock the website builder and start creating.</p>
+                  <p className="text-[13px] mb-5" style={{ color: T.muted }}>Upgrade to unlock the website builder and start creating.</p>
                   <a
                     href="/pricing"
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold"
-                    style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(168,199,250,0.2)` }}
+                    style={{ background: T.accentBg, color: T.accent, border: `1px solid rgba(99,68,212,0.2)` }}
                   >
                     View Plans <ArrowUpRight className="w-3.5 h-3.5" />
                   </a>
@@ -477,12 +477,12 @@ export default function ClientDashboard() {
             <div className="max-w-md space-y-3">
               <div className="p-5 rounded-xl" style={{ background: T.surface, border: `1px solid ${T.border}` }}>
                 <div className="flex items-center gap-4 mb-5 pb-5" style={{ borderBottom: `1px solid ${T.border}` }}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black flex-shrink-0" style={{ background: T.accent, color: "#111" }}>
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-black flex-shrink-0" style={{ background: T.accent, color: "#fff" }}>
                     {initials}
                   </div>
                   <div>
                     <p className="text-[15px] font-semibold" style={{ color: T.text }}>{userName}</p>
-                    <p className="text-[12px]" style={{ color: T.muted }}>{userEmail}</p>
+                    <p className="text-[13px]" style={{ color: T.muted }}>{userEmail}</p>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -504,7 +504,7 @@ export default function ClientDashboard() {
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-2.5 px-4 py-3 rounded-xl text-[13px] font-semibold transition-all"
-                style={{ color: "#f28b82", background: "rgba(234,67,53,0.06)", border: "1px solid rgba(234,67,53,0.15)" }}
+                style={{ color: "#c5221f", background: "rgba(197,34,31,0.05)", border: "1px solid rgba(197,34,31,0.15)" }}
               >
                 <LogOut className="w-4 h-4" /> Sign Out
               </button>
@@ -521,7 +521,7 @@ export default function ClientDashboard() {
                   </div>
                   <div>
                     <p className="text-[14px] font-semibold" style={{ color: T.text }}>We&apos;re here to help</p>
-                    <p className="text-[12px]" style={{ color: T.muted }}>Reach our team through any channel</p>
+                    <p className="text-[13px]" style={{ color: T.muted }}>Reach our team through any channel</p>
                   </div>
                 </div>
                 {[
@@ -533,28 +533,28 @@ export default function ClientDashboard() {
                     href={item.href}
                     className="flex items-center justify-between p-4 rounded-lg transition-all group"
                     style={{ background: T.hover }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)"; }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "#EBEBEB"; }}
                     onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = T.hover; }}
                   >
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: T.muted }}>{item.label}</p>
                       <p className="text-[13px] font-medium mt-0.5" style={{ color: T.text }}>{item.value}</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: T.muted }}>{item.sub}</p>
+                      <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>{item.sub}</p>
                     </div>
                     <ExternalLink className="w-4 h-4 shrink-0" style={{ color: T.muted }} />
                   </a>
                 ))}
               </div>
 
-              <div className="p-5 rounded-xl" style={{ background: T.accentBg, border: "1px solid rgba(168,199,250,0.2)" }}>
+              <div className="p-5 rounded-xl" style={{ background: T.accentBg, border: "1px solid rgba(99,68,212,0.2)" }}>
                 <p className="text-[14px] font-semibold mb-1" style={{ color: T.accent }}>Need a new feature?</p>
-                <p className="text-[12px] mb-4 leading-relaxed" style={{ color: T.muted }}>
+                <p className="text-[13px] mb-4 leading-relaxed" style={{ color: T.muted }}>
                   Tell us what you need and we&apos;ll work with you to make it happen.
                 </p>
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent("open-lead-popup"))}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[12px] font-semibold transition-all"
-                  style={{ background: T.accent, color: "#111" }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all"
+                  style={{ background: T.accent, color: "#fff" }}
                 >
                   Send a Request <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>

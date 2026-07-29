@@ -6,7 +6,6 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 import React, { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 
 interface ProjectCardProps {
   project: {
@@ -21,7 +20,7 @@ interface ProjectCardProps {
   index: number;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ project, index }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });

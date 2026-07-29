@@ -224,8 +224,9 @@ function ElPreview({ el }: { el: CanvasEl }) {
             className={`${IW[p.imgWidth ?? "full"] ?? "w-full"} ${IR[p.imgRadius ?? "md"] ?? "rounded-xl"} ${IS[p.imgShadow ?? "none"] ?? ""} max-h-40 ${p.imgFit === "contain" ? "object-contain" : "object-cover"}`}
           />
         ) : (
-          <div className="w-full h-24 bg-gray-100 rounded-xl flex flex-col items-center justify-center text-gray-300 text-[11px] border border-dashed border-gray-200 gap-1.5">
-            <ImageIcon size={18} /><span>No image yet</span>
+          <div className="w-full h-24 bg-gray-50 rounded-xl flex flex-col items-center justify-center text-gray-400 text-[11px] border-2 border-dashed border-gray-200 gap-1.5 hover:border-[#6344d4]/40 hover:text-[#6344d4]/70 transition-all cursor-pointer">
+            <Upload size={16} />
+            <span className="font-semibold">Click to select → upload in right panel</span>
           </div>
         )}
       </div>
@@ -294,7 +295,7 @@ function InlineEditor({ el, value, onChange, onSave, onCancel }: {
 
 // ── Sortable element wrapper ───────────────────────────────────────────────────
 
-function SortableEl({ el, isSelected, onSelect, onDelete, selectedElId, activeDivElId, onSelectChild, onDeleteChild, onDivDragEnd, onContentEdit }: {
+function SortableEl({ el, isSelected, onSelect, onDelete, selectedElId, activeDivElId, onSelectChild, onDeleteChild, onDivDragEnd, onContentEdit, onAddToDiv }: {
   el: CanvasEl;
   isSelected: boolean;
   onSelect: () => void;
@@ -305,6 +306,7 @@ function SortableEl({ el, isSelected, onSelect, onDelete, selectedElId, activeDi
   onDeleteChild?: (childId: string) => void;
   onDivDragEnd?: (evt: DragEndEvent, divId: string) => void;
   onContentEdit?: (elId: string, content: string) => void;
+  onAddToDiv?: (divId: string, type: CanvasElType) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: el.id });
   const innerSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -365,16 +367,47 @@ function SortableEl({ el, isSelected, onSelect, onDelete, selectedElId, activeDi
                       onDeleteChild={onDeleteChild}
                       onDivDragEnd={onDivDragEnd}
                       onContentEdit={onContentEdit}
+                      onAddToDiv={onAddToDiv}
                     />
                   ))}
                   {(!el.children?.length) && (
-                    <div className={`min-h-[36px] flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider ${isActiveDrop ? "text-indigo-400 bg-indigo-50/50 border border-dashed border-indigo-200" : "text-gray-300"}`}>
-                      <Plus size={11} />{isActiveDrop ? "Pick element from palette" : "Empty div"}
+                    <div
+                      onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                      className={`min-h-[40px] flex flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-bold uppercase tracking-wider cursor-pointer transition-all ${
+                        isActiveDrop
+                          ? "text-indigo-400 bg-indigo-50/60 border border-dashed border-indigo-300"
+                          : "text-gray-300 hover:text-indigo-400 hover:bg-indigo-50/40 hover:border hover:border-dashed hover:border-indigo-200"
+                      }`}
+                    >
+                      <Plus size={11} />
+                      {isActiveDrop ? "Pick element below ↓" : "Click div → pick element"}
                     </div>
                   )}
                 </div>
               </SortableContext>
             </DndContext>
+
+            {/* ── Inline mini-palette (shown when this div is active) ── */}
+            {isActiveDrop && (
+              <div
+                className="border-t border-indigo-100 px-2 py-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1.5">Add to this div:</p>
+                <div className="flex flex-wrap gap-1">
+                  {PALETTE.map((item) => (
+                    <button
+                      key={item.type}
+                      onClick={(e) => { e.stopPropagation(); onAddToDiv?.(el.id, item.type); }}
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-indigo-100 text-[9px] font-bold text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 transition-all shadow-sm"
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1145,11 +1178,20 @@ export default function CanvasEditor({ onAdd, onClose, initialCanvas, initialNam
   const [inspectorTab, setInspectorTab]   = useState<"content" | "style">("content");
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "mobile">("desktop");
   const [savedToLib, setSavedToLib]       = useState(false);
+  const [paletteDragType, setPaletteDragType] = useState<CanvasElType | null>(null);
+  const [dropTarget, setDropTarget]           = useState<{ colId: string; idx: number } | null>(null);
   const undoStack = useRef<CanvasData[]>([]);
   const redoStack = useRef<CanvasData[]>([]);
   const isUndoingRef = useRef(false);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  // Auto-select first column so palette clicks work immediately on open
+  useEffect(() => {
+    const firstCol = canvas.rows[0]?.cols[0];
+    if (firstCol && !selectedColId) setSelectedColId(firstCol.id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const undo = useCallback(() => {
     if (undoStack.current.length === 0) return;
@@ -1247,6 +1289,29 @@ export default function CanvasEditor({ onAdd, onClose, initialCanvas, initialNam
     if (type === "div") setActiveDivElId(el.id);
   }, []);
 
+  const addElementAtIndex = useCallback((colId: string, type: CanvasElType, index: number) => {
+    const pal = PALETTE.find((pp) => pp.type === type)!;
+    const el: CanvasEl = {
+      id: uid(), type, content: pal.defaultContent, props: { ...pal.defaultProps },
+      ...(type === "div" ? { children: [], divStyle: {} } : {}),
+    };
+    setCanvas((d) => ({
+      ...d,
+      rows: d.rows.map((row) => ({
+        ...row,
+        cols: row.cols.map((col) => {
+          if (col.id !== colId) return col;
+          const els = [...col.elements];
+          els.splice(Math.min(index, els.length), 0, el);
+          return { ...col, elements: els };
+        }),
+      })),
+    }));
+    setSelectedElId(el.id);
+    setSelectedColId(colId);
+    if (type === "div") setActiveDivElId(el.id);
+  }, []);
+
   const addElementToDiv = useCallback((divId: string, type: CanvasElType) => {
     const pal = PALETTE.find((pp) => pp.type === type)!;
     const el: CanvasEl = {
@@ -1302,15 +1367,18 @@ export default function CanvasEditor({ onAdd, onClose, initialCanvas, initialNam
   }, [canvas]);
 
   const handlePaletteClick = (type: CanvasElType) => {
-    if (activeDivElId) addElementToDiv(activeDivElId, type);
-    else if (selectedColId) addElement(selectedColId, type);
-    else setPendingType(type);
+    if (activeDivElId) { addElementToDiv(activeDivElId, type); return; }
+    if (selectedColId) { addElement(selectedColId, type); return; }
+    // No column selected — auto-pick if there's only one column
+    const allCols = canvas.rows.flatMap((r) => r.cols);
+    if (allCols.length === 1) { addElement(allCols[0].id, type); setSelectedColId(allCols[0].id); return; }
+    setPendingType(type);
   };
 
   const totalEls = canvas.rows.flatMap((r) => r.cols.flatMap((c) => c.elements)).length;
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-[#F3F4F6]">
+    <div className="absolute inset-0 z-[60] flex flex-col bg-[#F3F4F6]">
 
       {/* Top bar */}
       <div className="h-14 bg-white border-b border-gray-100 flex items-center px-5 gap-4 flex-shrink-0 shadow-sm">
@@ -1360,23 +1428,35 @@ export default function CanvasEditor({ onAdd, onClose, initialCanvas, initialNam
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Elements</p>
             <div className="grid grid-cols-2 gap-1.5">
               {PALETTE.map((item) => (
-                <button key={item.type} onClick={() => handlePaletteClick(item.type)}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all ${pendingType === item.type ? "border-[#6344d4] bg-purple-50 text-[#6344d4]" : "border-gray-100 hover:border-[#6344d4]/30 hover:bg-gray-50 text-gray-500"}`}>
+                <button
+                  key={item.type}
+                  draggable
+                  onDragStart={(e) => {
+                    setPaletteDragType(item.type);
+                    e.dataTransfer.setData("text/plain", item.type);
+                    e.dataTransfer.effectAllowed = "copy";
+                  }}
+                  onDragEnd={() => { setPaletteDragType(null); setDropTarget(null); }}
+                  onClick={() => handlePaletteClick(item.type)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all cursor-grab active:cursor-grabbing ${pendingType === item.type ? "border-[#6344d4] bg-purple-50 text-[#6344d4]" : "border-gray-100 hover:border-[#6344d4]/30 hover:bg-gray-50 text-gray-500"}`}>
                   <span className={pendingType === item.type ? "text-[#6344d4]" : "text-gray-400"}>{item.icon}</span>
                   <span className="text-[10px] font-bold">{item.label}</span>
                 </button>
               ))}
             </div>
             {pendingType && !selectedColId && !activeDivElId && (
-              <p className="mt-2.5 text-[10px] text-[#6344d4] font-semibold text-center bg-purple-50 py-2 rounded-lg border border-purple-100">Click a div to place</p>
+              <p className="mt-2.5 text-[10px] text-[#6344d4] font-semibold text-center bg-purple-50 py-2 rounded-lg border border-purple-100">Click a column in the canvas to place it</p>
             )}
-            {activeDivElId && !pendingType && (
+            {activeDivElId && (
               <p className="mt-2.5 text-[10px] text-indigo-600 font-semibold text-center bg-indigo-50 py-2 rounded-lg border border-indigo-100 flex items-center justify-center gap-1">
-                <Box size={9} /> Nested div active
+                <Box size={9} /> Adding inside div — click an element
               </p>
             )}
             {selectedColId && !activeDivElId && !pendingType && (
-              <p className="mt-2.5 text-[10px] text-emerald-600 font-semibold text-center bg-emerald-50 py-2 rounded-lg border border-emerald-100">Col selected — pick element</p>
+              <p className="mt-2.5 text-[10px] text-emerald-600 font-semibold text-center bg-emerald-50 py-2 rounded-lg border border-emerald-100">Click any element above to add it</p>
+            )}
+            {!selectedColId && !activeDivElId && !pendingType && (
+              <p className="mt-2.5 text-[10px] text-gray-400 font-semibold text-center bg-gray-50 py-2 rounded-lg border border-gray-100">Click an element to add it to the canvas</p>
             )}
           </div>
           <div className="border-t border-gray-50 p-4">
@@ -1460,11 +1540,43 @@ export default function CanvasEditor({ onAdd, onClose, initialCanvas, initialNam
                       {row.cols.map((col, colIdx) => {
                         const span     = layoutCfg.cols[colIdx] ?? 12;
                         const isActive = selectedColId === col.id && !selectedElId && !activeDivElId;
+                        const isDragOver = dropTarget?.colId === col.id;
                         return (
                           <div key={col.id}
                             style={{ gridColumn: `span ${span} / span ${span}`, ...colCssStyle(col.style) }}
-                            className={`min-h-[80px] rounded-xl border-2 transition-all ${colClasses(col.style)} ${isActive ? "border-indigo-500 shadow-[0_0_0_2px_rgba(99,68,212,0.12)]" : "border-dashed border-gray-200 hover:border-[#6344d4]/40"}`}
+                            className={`min-h-[80px] rounded-xl border-2 transition-all ${colClasses(col.style)} ${
+                              isActive
+                                ? "border-indigo-500 shadow-[0_0_0_2px_rgba(99,68,212,0.12)]"
+                                : isDragOver
+                                ? "border-[#6344d4] bg-purple-50/20"
+                                : pendingType
+                                ? "border-[#6344d4] border-dashed bg-purple-50/30 animate-pulse cursor-crosshair"
+                                : "border-dashed border-gray-200 hover:border-[#6344d4]/40"
+                            }`}
                             onClick={(e) => { e.stopPropagation(); setSelectedElId(null); setSelectedColId(col.id); setActiveDivElId(null); if (pendingType) { addElement(col.id, pendingType); setPendingType(null); } }}
+                            onDragOver={(e) => {
+                              if (!e.dataTransfer.types.includes("text/plain")) return;
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = "copy";
+                              if (dropTarget?.colId !== col.id || dropTarget?.idx !== col.elements.length) {
+                                setDropTarget({ colId: col.id, idx: col.elements.length });
+                              }
+                            }}
+                            onDragLeave={(e) => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+                                setDropTarget(null);
+                              }
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const type = e.dataTransfer.getData("text/plain") as CanvasElType;
+                              if (!type) return;
+                              const idx = dropTarget?.colId === col.id ? dropTarget.idx : col.elements.length;
+                              addElementAtIndex(col.id, type, idx);
+                              setPaletteDragType(null);
+                              setDropTarget(null);
+                            }}
                           >
                             <div className="flex">
                               <div className={`flex flex-col items-center gap-1 px-1.5 py-2 border-r border-gray-100 transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover/row:opacity-50"}`}>
@@ -1475,27 +1587,51 @@ export default function CanvasEditor({ onAdd, onClose, initialCanvas, initialNam
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(evt) => handleDragEnd(evt, col.id)}>
                                   <SortableContext items={col.elements.map((e) => e.id)} strategy={verticalListSortingStrategy}>
                                     <div className="px-2 pb-2 space-y-1 min-h-[50px]">
-                                      {col.elements.map((el) => (
-                                        <SortableEl key={el.id} el={el} isSelected={selectedElId === el.id}
-                                          onSelect={() => {
-                                            setSelectedElId(el.id); setSelectedColId(col.id);
-                                            setActiveDivElId(el.type === "div" ? el.id : null);
+                                      {col.elements.map((el, elIdx) => (
+                                        <div
+                                          key={el.id}
+                                          onDragOver={(e) => {
+                                            if (!e.dataTransfer.types.includes("text/plain")) return;
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            const insertIdx = e.clientY < rect.top + rect.height / 2 ? elIdx : elIdx + 1;
+                                            if (dropTarget?.colId !== col.id || dropTarget?.idx !== insertIdx) {
+                                              setDropTarget({ colId: col.id, idx: insertIdx });
+                                            }
                                           }}
-                                          onDelete={() => deleteElement(el.id)}
-                                          selectedElId={selectedElId}
-                                          activeDivElId={activeDivElId}
-                                          onSelectChild={(childId, isDiv) => {
-                                            setSelectedElId(childId);
-                                            setActiveDivElId(isDiv ? childId : el.id);
-                                          }}
-                                          onDeleteChild={(childId) => deleteElement(childId)}
-                                          onDivDragEnd={handleDivDragEnd}
-                                          onContentEdit={handleInlineEdit}
-                                        />
+                                        >
+                                          {dropTarget?.colId === col.id && dropTarget?.idx === elIdx && (
+                                            <div className="h-0.5 bg-[#6344d4] rounded-full mx-1 mb-1 opacity-80" />
+                                          )}
+                                          <SortableEl el={el} isSelected={selectedElId === el.id}
+                                            onSelect={() => {
+                                              setSelectedElId(el.id); setSelectedColId(col.id);
+                                              setActiveDivElId(el.type === "div" ? el.id : null);
+                                            }}
+                                            onDelete={() => deleteElement(el.id)}
+                                            selectedElId={selectedElId}
+                                            activeDivElId={activeDivElId}
+                                            onSelectChild={(childId, isDiv) => {
+                                              setSelectedElId(childId);
+                                              setActiveDivElId(isDiv ? childId : el.id);
+                                            }}
+                                            onDeleteChild={(childId) => deleteElement(childId)}
+                                            onDivDragEnd={handleDivDragEnd}
+                                            onContentEdit={handleInlineEdit}
+                                            onAddToDiv={(divId, type) => {
+                                              addElementToDiv(divId, type);
+                                              setActiveDivElId(divId);
+                                            }}
+                                          />
+                                          {dropTarget?.colId === col.id && dropTarget?.idx === elIdx + 1 && (
+                                            <div className="h-0.5 bg-[#6344d4] rounded-full mx-1 mt-1 opacity-80" />
+                                          )}
+                                        </div>
                                       ))}
                                       {col.elements.length === 0 && (
-                                    <div className={`min-h-[48px] flex flex-col items-center justify-center gap-1 rounded-lg ${isActive ? "text-[#6344d4]" : "text-gray-300"}`}>
-                                      <Plus size={13} /><span className="text-[9px] font-bold uppercase tracking-wider">Add elements</span>
+                                    <div className={`min-h-[48px] flex flex-col items-center justify-center gap-1 rounded-lg ${isActive || isDragOver ? "text-[#6344d4]" : "text-gray-300"}`}>
+                                      <Plus size={13} /><span className="text-[9px] font-bold uppercase tracking-wider">{isDragOver ? "Drop here" : "Add elements"}</span>
                                     </div>
                                   )}
                                 </div>

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
 import Link from "next/link";
 
@@ -133,7 +134,7 @@ export default function PricingSection({ section }: { section: any }) {
 
             {plan.features.length > 0 && (
               <div className="mt-4 border-t border-gray-100 pt-4">
-                <p className="text-xs font-semibold text-gray-700 mb-3">What's included</p>
+                <p className="text-xs font-semibold text-gray-700 mb-3">What&apos;s included</p>
                 <ul className="space-y-2">
                   {plan.features.map((f: string, j: number) => (
                     <li key={j} className="flex items-start gap-2 text-sm text-gray-600">

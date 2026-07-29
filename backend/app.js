@@ -10,7 +10,44 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-app.use(cors());
+// ── CORS allowlist (Bug 5) ─────────────────────────────────────────────────
+// Allows: the app's own origin, any subdomain of the root domain (published
+// sites at slug.<root>), and verified custom domains (checked against the DB,
+// cached briefly so we don't hit Mongo on every request).
+const ROOT_DOMAIN = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").replace(/^https?:\/\//, "");
+const rootDomainPattern = new RegExp(`^https?://([a-z0-9-]+\\.)?${ROOT_DOMAIN.replace(/\./g, "\\.")}$`, "i");
+
+const domainCache = new Map(); // host -> { verified: boolean, expiresAt: number }
+const DOMAIN_CACHE_TTL = 5 * 60 * 1000;
+
+async function isVerifiedCustomDomain(host) {
+  const cached = domainCache.get(host);
+  if (cached && cached.expiresAt > Date.now()) return cached.verified;
+  let verified = false;
+  try {
+    const BuilderProject = require("./models/BuilderProject");
+    const project = await BuilderProject.findOne({ customDomain: host, customDomainVerified: true }).select("_id").lean();
+    verified = !!project;
+  } catch (err) {
+    console.error("CORS custom-domain lookup failed:", err.message);
+  }
+  domainCache.set(host, { verified, expiresAt: Date.now() + DOMAIN_CACHE_TTL });
+  return verified;
+}
+
+app.use(cors({
+  origin: async (origin, callback) => {
+    if (!origin) return callback(null, true); // same-origin / server-to-server / curl
+    if (origin === process.env.APP_URL) return callback(null, true);
+    if (rootDomainPattern.test(origin)) return callback(null, true);
+    try {
+      const host = new URL(origin).host;
+      if (await isVerifiedCustomDomain(host)) return callback(null, true);
+    } catch {}
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+}));
 
 // Stripe webhook needs raw body — must be before express.json()
 const { router: subscriptionRouter, webhookHandler } = require("./routes/subscriptions");
@@ -69,6 +106,12 @@ const aiLimiter = rateLimit({
 app.use("/api/builder/generate", aiLimiter);
 app.use("/api/builder/generate-page", aiLimiter);
 app.use("/api/builder/regenerate-block", aiLimiter);
+app.use("/api/builder/generate-elements", aiLimiter);
+app.use("/api/builder/regenerate-element", aiLimiter);
+app.use("/api/builder/animate-element", aiLimiter);
+app.use("/api/builder/ai/rewrite", aiLimiter);
+app.use("/api/builder/ai/seo", aiLimiter);
+app.use("/api/builder/ai/theme", aiLimiter);
 app.use("/api/builder", builderRoutes);
 
 const footerRoutes = require("./routes/footer");
@@ -156,20 +199,13 @@ mongoose
       }
     }
 
-    // ── 4. Ensure admin@lhrweb.com always exists with Admin@123 ────────
+    // ── 4. Create default admin if not exists (Ch 8.1: no upsert, no password reset on boot) ──
     const bcryptJs = require("bcryptjs");
     const users = db.collection("users");
-    const hashed = await bcryptJs.hash("Admin@123", 10);
     
-    const adminUser = await users.findOne({ email: "admin@lhrweb.com" });
-    if (adminUser) {
-      // Force update role and password to ensure default login works
-      await users.updateOne(
-        { email: "admin@lhrweb.com" }, 
-        { $set: { role: "admin", password: hashed } }
-      );
-      console.log("Verified admin@lhrweb.com: Role and Password synced.");
-    } else {
+    const existingAdmin = await users.findOne({ email: "admin@lhrweb.com" });
+    if (!existingAdmin) {
+      const hashed = await bcryptJs.hash("Admin@123", 10);
       await users.insertOne({
         name: "Admin",
         email: "admin@lhrweb.com",
@@ -181,6 +217,15 @@ mongoose
         __v: 0,
       });
       console.log("Created default admin account: admin@lhrweb.com / Admin@123");
+    } else {
+      // Only ensure role is set correctly — do NOT reset password
+      if (existingAdmin.role !== "admin") {
+        await users.updateOne(
+          { email: "admin@lhrweb.com" },
+          { $set: { role: "admin" } }
+        );
+      }
+      console.log("Admin account exists — password preserved.");
     }
 
     // ── 5. Seed demo service pages ────────────────────────────────────────

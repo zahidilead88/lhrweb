@@ -25,6 +25,11 @@ const userSchema = new mongoose.Schema(
       default: [],
     },
     package:               { type: String, enum: ["starter", "pro"] },
+    // Ch 7 — AI quota (lazy monthly reset, units weighted per operation)
+    aiUsage: {
+      period:    { type: String },   // "2026-07"
+      unitsUsed: { type: Number, default: 0 },
+    },
     stripeCustomerId:      { type: String },
     passwordResetToken:    { type: String },
     passwordResetExpires:  { type: Date },

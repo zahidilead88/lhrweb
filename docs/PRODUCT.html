@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LHRWEB — Product Documentation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0C0E1A;
+    --surface:  #141626;
+    --surface2: #1A1E35;
+    --border:   rgba(123,110,245,0.18);
+    --accent:   #7B6EF5;
+    --teal:     #3ECFBD;
+    --text:     #DDE0F0;
+    --muted:    #6B7499;
+    --code-bg:  #0A0C18;
+    --pill-bg:  rgba(123,110,245,0.12);
+    --pill-text:#B8B2FF;
+    --tag-bg:   rgba(62,207,189,0.1);
+    --tag-text: #3ECFBD;
+    --nav-w:    240px;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg:       #F5F6FC;
+      --surface:  #FFFFFF;
+      --surface2: #EEF0FA;
+      --border:   rgba(91,80,212,0.14);
+      --accent:   #5B50D4;
+      --teal:     #1BA99A;
+      --text:     #111827;
+      --muted:    #6B7280;
+      --code-bg:  #F0F1FA;
+      --pill-bg:  rgba(91,80,212,0.08);
+      --pill-text:#5B50D4;
+      --tag-bg:   rgba(27,169,154,0.1);
+      --tag-text: #1BA99A;
+    }
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.65;
+    min-height: 100vh;
+  }
+
+  .shell { display: flex; min-height: 100vh; }
+
+  .sidenav {
+    width: var(--nav-w);
+    flex-shrink: 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    z-index: 100;
+    padding-bottom: 32px;
+  }
+
+  .sidenav-header {
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: var(--surface);
+    z-index: 1;
+  }
+
+  .sidenav-logo { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; color: var(--accent); }
+  .sidenav-logo span { color: var(--text); }
+  .sidenav-sub { font-size: 10px; color: var(--muted); font-family: ui-monospace, 'SF Mono', monospace; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+
+  .nav-group { padding: 12px 0 4px; }
+  .nav-group-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 0 18px 6px; display: block; }
+
+  .nav-link { display: flex; align-items: center; gap: 7px; padding: 6px 18px; font-size: 12.5px; color: var(--muted); text-decoration: none; transition: color 0.12s, background 0.12s; border-left: 2px solid transparent; margin-left: -1px; }
+  .nav-link:hover { color: var(--text); background: var(--surface2); }
+
+  .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  .main { margin-left: var(--nav-w); flex: 1; max-width: 900px; padding: 48px 48px 80px; }
+
+  .top-strip { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+
+  .doc-title { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; text-wrap: balance; line-height: 1.2; }
+  .doc-title .accent { color: var(--accent); }
+
+  .doc-meta { font-size: 11px; color: var(--muted); font-family: ui-monospace, 'SF Mono', monospace; text-align: right; line-height: 1.8; }
+
+  .section { margin-bottom: 52px; scroll-margin-top: 24px; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .section-bar { width: 3px; height: 20px; border-radius: 2px; background: var(--accent); flex-shrink: 0; }
+  .section-bar.teal { background: var(--teal); }
+  .section-title { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+  .section-id { font-family: ui-monospace, 'SF Mono', monospace; font-size: 10px; color: var(--muted); margin-left: auto; }
+
+  .sub { margin-bottom: 28px; }
+  .sub-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 10px; letter-spacing: -0.01em; }
+
+  p { color: var(--text); margin-bottom: 10px; font-size: 13.5px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin-bottom: 10px; }
+  .card-title { font-size: 12px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .card-desc { font-size: 12px; color: var(--muted); margin: 0; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  @media (max-width: 680px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+  }
+
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .pill { font-size: 11px; font-family: ui-monospace, 'SF Mono', monospace; background: var(--pill-bg); color: var(--pill-text); border-radius: 4px; padding: 2px 8px; letter-spacing: 0.01em; }
+  .tag { font-size: 11px; font-family: ui-monospace, 'SF Mono', monospace; background: var(--tag-bg); color: var(--tag-text); border-radius: 4px; padding: 2px 8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 8px; }
+  th { text-align: left; padding: 6px 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+  td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  .kbd { font-family: ui-monospace, 'SF Mono', monospace; font-size: 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; color: var(--pill-text); white-space: nowrap; }
+
+  .code-block { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; font-family: ui-monospace, 'SF Mono', monospace; font-size: 11.5px; color: var(--muted); overflow-x: auto; margin-bottom: 10px; line-height: 1.7; }
+  .code-block .k { color: var(--accent); }
+  .code-block .s { color: var(--teal); }
+  .code-block .c { color: #4B5278; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  ul.doc-list { padding-left: 0; list-style: none; }
+  ul.doc-list li { padding: 4px 0 4px 14px; position: relative; font-size: 13px; color: var(--text); border-bottom: 1px solid rgba(255,255,255,0.03); }
+  ul.doc-list li::before { content: ''; position: absolute; left: 0; top: 12px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: 0.5; }
+
+  .tool-row { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .tool-row:last-child { border-bottom: none; }
+  .tool-key { width: 28px; text-align: center; flex-shrink: 0; }
+  .tool-name { font-weight: 600; font-size: 12.5px; flex: 0 0 100px; }
+  .tool-desc { font-size: 12.5px; color: var(--muted); flex: 1; }
+
+  .stack-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+  .stack-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 12px; font-weight: 600; }
+  .stack-item .role { font-size: 10px; font-family: ui-monospace, 'SF Mono', monospace; color: var(--muted); display: block; margin-bottom: 2px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  .endpoint { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+  .endpoint:last-child { border-bottom: none; }
+  .method { font-family: ui-monospace, 'SF Mono', monospace; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; flex-shrink: 0; margin-top: 1px; }
+  .method.GET    { background: rgba(62,207,189,0.15); color: var(--teal); }
+  .method.POST   { background: rgba(123,110,245,0.15); color: var(--accent); }
+  .method.PUT    { background: rgba(245,158,11,0.15);  color: #F59E0B; }
+  .method.DELETE { background: rgba(239,68,68,0.15);   color: #EF4444; }
+  .ep-path { font-family: ui-monospace, 'SF Mono', monospace; color: var(--text); }
+  .ep-desc { color: var(--muted); margin-left: auto; font-style: italic; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0; }
+  @media (max-width: 620px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; text-align: center; }
+  .stat-n { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; margin-bottom: 4px; }
+  .stat-l { font-size: 11px; color: var(--muted); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 700px) {
+    :root { --nav-w: 0px; }
+    .sidenav { display: none; }
+    .main { margin-left: 0; padding: 24px 18px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <nav class="sidenav">
+    <div class="sidenav-header">
+      <div class="sidenav-logo">LHR<span>WEB</span></div>
+      <div class="sidenav-sub">Product Documentation</div>
+    </div>
+    <div class="nav-group">
+      <span class="nav-group-label">Overview</span>
+      <a href="#overview" class="nav-link"><span class="nav-dot"></span>Product Overview</a>
+      <a href="#stack" class="nav-link"><span class="nav-dot"></span>Tech Stack</a>
+      <a href="#stats" class="nav-link"><span class="nav-dot"></span>At a Glance</a>
+    </div>
+    <div class="nav-group">
+      <span class="nav-group-label">Frontend</span>
+      <a href="#public" class="nav-link"><span class="nav-dot"></span>Public Website</a>
+      <a href="#auth" class="nav-link"><span class="nav-dot"></span>Authentication</a>
+      <a href="#dashboard" class="nav-link"><span class="nav-dot"></span>Client Dashboard</a>
+      <a href="#admin" class="nav-link"><span class="nav-dot"></span>Admin CMS</a>
+    </div>
+    <div class="nav-group">
+      <span class="nav-group-label">Visual Builder</span>
+      <a href="#builder-overview" class="nav-link"><span class="nav-dot"></span>Builder Overview</a>
+      <a href="#canvas" class="nav-link"><span class="nav-dot"></span>Canvas System</a>
+      <a href="#tools" class="nav-link"><span class="nav-dot"></span>Canvas Tools</a>
+      <a href="#frames" class="nav-link"><span class="nav-dot"></span>Frames</a>
+      <a href="#elements" class="nav-link"><span class="nav-dot"></span>Elements</a>
+      <a href="#properties" class="nav-link"><span class="nav-dot"></span>Properties Panel</a>
+      <a href="#autolayout" class="nav-link"><span class="nav-dot"></span>Auto-Layout</a>
+      <a href="#layers" class="nav-link"><span class="nav-dot"></span>Layers Panel</a>
+      <a href="#figma" class="nav-link"><span class="nav-dot"></span>Figma Paste</a>
+      <a href="#ai" class="nav-link"><span class="nav-dot"></span>AI Generation</a>
+      <a href="#shortcuts" class="nav-link"><span class="nav-dot"></span>Keyboard Shortcuts</a>
+    </div>
+    <div class="nav-group">
+      <span class="nav-group-label">Platform</span>
+      <a href="#export" class="nav-link"><span class="nav-dot"></span>Export System</a>
+      <a href="#publishing" class="nav-link"><span class="nav-dot"></span>Publishing</a>
+      <a href="#subscriptions" class="nav-link"><span class="nav-dot"></span>Subscriptions</a>
+      <a href="#api" class="nav-link"><span class="nav-dot"></span>Backend API</a>
+      <a href="#filestructure" class="nav-link"><span class="nav-dot"></span>File Structure</a>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <div class="top-strip">
+      <div class="doc-title"><span class="accent">LHRWEB</span> — Complete<br>Product Documentation</div>
+      <div class="doc-meta">Version: 2.0<br>Updated: July 2026<br>Stack: Next.js 15 + Express</div>
+    </div>
+
+    <!-- §1 OVERVIEW -->
+    <section class="section" id="overview">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Product Overview</div><div class="section-id">§1</div></div>
+      <p>LHRWEB is a full-stack website builder platform for a digital agency. It combines a public-facing agency website, a client-facing visual page builder, a multi-role admin CMS, and a Stripe-powered subscription system into a single monorepo.</p>
+      <p>The centrepiece is a <strong>Figma-like visual canvas editor</strong> — a browser-based design tool where users create pages using frames, elements, shapes, and AI-generated content, then export or publish their work directly.</p>
+      <div class="grid-2" style="margin-top:16px">
+        <div class="card"><div class="card-title">Who uses it</div><div class="card-desc">End clients (subscribers) build their own sites using the visual builder. Agency admins manage the platform via the CMS. The public visits the agency website at the root domain.</div></div>
+        <div class="card"><div class="card-title">What it produces</div><div class="card-desc">Publishable websites (hosted at subdomains or custom domains), exportable HTML/CSS, Next.js, or Laravel code packages — all generated from the visual builder's element tree.</div></div>
+      </div>
+    </section>
+
+    <!-- §2 TECH STACK -->
+    <section class="section" id="stack">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Tech Stack</div><div class="section-id">§2</div></div>
+      <div class="stack-row">
+        <div class="stack-item"><span class="role">Frontend</span>Next.js 15</div>
+        <div class="stack-item"><span class="role">Language</span>TypeScript</div>
+        <div class="stack-item"><span class="role">Styling</span>Tailwind CSS</div>
+        <div class="stack-item"><span class="role">Backend</span>Express.js</div>
+        <div class="stack-item"><span class="role">Database</span>MongoDB + Mongoose</div>
+        <div class="stack-item"><span class="role">Auth</span>JWT</div>
+        <div class="stack-item"><span class="role">AI</span>Google Gemini 2.5 Flash</div>
+        <div class="stack-item"><span class="role">Payments</span>Stripe</div>
+        <div class="stack-item"><span class="role">Upload</span>Multer</div>
+        <div class="stack-item"><span class="role">Email</span>Nodemailer</div>
+        <div class="stack-item"><span class="role">Export</span>Archiver (zip)</div>
+        <div class="stack-item"><span class="role">DnD</span>react-rnd</div>
+      </div>
+    </section>
+
+    <!-- §3 AT A GLANCE -->
+    <section class="section" id="stats">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">At a Glance</div><div class="section-id">§3</div></div>
+      <div class="stats">
+        <div class="stat"><div class="stat-n">13</div><div class="stat-l">Canvas Tools</div></div>
+        <div class="stat"><div class="stat-n">3</div><div class="stat-l">Export Formats</div></div>
+        <div class="stat"><div class="stat-n">27</div><div class="stat-l">Backend API Routes</div></div>
+        <div class="stat"><div class="stat-n">4</div><div class="stat-l">Frame Presets</div></div>
+        <div class="stat"><div class="stat-n">100+</div><div class="stat-l">CSS Properties in Styles</div></div>
+        <div class="stat"><div class="stat-n">6K+</div><div class="stat-l">Lines — Builder page.tsx</div></div>
+        <div class="stat"><div class="stat-n">2</div><div class="stat-l">Subscription Plans</div></div>
+        <div class="stat"><div class="stat-n">12</div><div class="stat-l">MongoDB Models</div></div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- §4 PUBLIC WEBSITE -->
+    <section class="section" id="public">
+      <div class="section-header"><div class="section-bar teal"></div><div class="section-title">Public Website</div><div class="section-id">§4</div></div>
+      <p>The agency's own marketing website, served at the root domain. All pages are Next.js App Router pages that fetch content from the Express API.</p>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">Home <span class="tag">/</span></div><div class="card-desc">Agency landing page with hero, services highlights, portfolio preview, and contact CTA.</div></div>
+        <div class="card"><div class="card-title">Services <span class="tag">/services/[slug]</span></div><div class="card-desc">Dynamic service pages driven by CMS data. Each slug maps to a Service document in MongoDB.</div></div>
+        <div class="card"><div class="card-title">Blog <span class="tag">/blog/[id]</span></div><div class="card-desc">Blog listing and individual post pages, CMS-managed from the admin panel.</div></div>
+        <div class="card"><div class="card-title">Portfolio <span class="tag">/projects/[id]</span></div><div class="card-desc">Project case studies with images and descriptions, managed via admin.</div></div>
+        <div class="card"><div class="card-title">Pricing <span class="tag">/pricing</span></div><div class="card-desc">Plan comparison for Starter and Pro tiers. Checkout via Stripe.</div></div>
+        <div class="card"><div class="card-title">Dynamic Pages <span class="tag">/[slug]</span></div><div class="card-desc">CMS-managed generic pages (about, contact, etc.) with block-based content.</div></div>
+        <div class="card"><div class="card-title">Checkout Flow</div><div class="card-desc">Stripe-hosted checkout with <code>/checkout/success</code> and <code>/checkout/cancel</code> return pages.</div></div>
+        <div class="card"><div class="card-title">Published Sites <span class="tag">/site/[projectId]</span></div><div class="card-desc">Client-built sites are rendered here. Also served via custom subdomains and verified custom domains.</div></div>
+      </div>
+    </section>
+
+    <!-- §5 AUTH -->
+    <section class="section" id="auth">
+      <div class="section-header"><div class="section-bar teal"></div><div class="section-title">Authentication</div><div class="section-id">§5</div></div>
+      <p>Two separate auth systems exist: one for end clients, one for agency admins. Both use JWT stored in httpOnly cookies.</p>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">Client Auth</div><div class="card-desc">Register, Login, Forgot password, Reset password. JWT-protected client dashboard and builder.</div></div>
+        <div class="card"><div class="card-title">Admin Auth</div><div class="card-desc">Separate login and register flows at <code>/admin/(auth)</code>. Guards the full admin CMS area.</div></div>
+      </div>
+    </section>
+
+    <!-- §6 DASHBOARD -->
+    <section class="section" id="dashboard">
+      <div class="section-header"><div class="section-bar teal"></div><div class="section-title">Client Dashboard</div><div class="section-id">§6</div></div>
+      <p>The client-facing area at <code>/dashboard</code>. After login, clients see their projects, subscription status, and links to open the visual builder for each project.</p>
+      <div class="grid-3">
+        <div class="card"><div class="card-title">Project list</div><div class="card-desc">All builder projects belonging to the logged-in user.</div></div>
+        <div class="card"><div class="card-title">Create project</div><div class="card-desc">Manual init or AI-generate a new site with business name and tagline.</div></div>
+        <div class="card"><div class="card-title">Subscription status</div><div class="card-desc">Current plan, renewal date, and upgrade CTA.</div></div>
+      </div>
+    </section>
+
+    <!-- §7 ADMIN CMS -->
+    <section class="section" id="admin">
+      <div class="section-header"><div class="section-bar teal"></div><div class="section-title">Admin CMS</div><div class="section-id">§7</div></div>
+      <p>The agency's internal content management system at <code>/admin</code>. Manages everything displayed on the public website and the clients' published content.</p>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">Blog</div><div class="card-desc">Add, edit, delete blog posts. Rich content with images.</div></div>
+        <div class="card"><div class="card-title">Services</div><div class="card-desc">Create and edit services with slug-based routing to public pages.</div></div>
+        <div class="card"><div class="card-title">Portfolio / Projects</div><div class="card-desc">Add case studies shown in the public portfolio section.</div></div>
+        <div class="card"><div class="card-title">Pages</div><div class="card-desc">CMS pages with block editor. Each page has a slug and a list of content blocks.</div></div>
+        <div class="card"><div class="card-title">Sections Library</div><div class="card-desc">Reusable section templates (HTML + CSS) that clients can insert into their builder projects.</div></div>
+        <div class="card"><div class="card-title">Navigation Menu</div><div class="card-desc">Sortable tree of nav items with labels, slugs, and external URL support.</div></div>
+        <div class="card"><div class="card-title">Footer</div><div class="card-desc">Footer content management — columns, links, copyright text.</div></div>
+        <div class="card"><div class="card-title">Leads</div><div class="card-desc">All form submissions from the public contact forms, with email and message.</div></div>
+        <div class="card"><div class="card-title">Sites</div><div class="card-desc">View all client-published sites, their custom domains, and analytics.</div></div>
+        <div class="card"><div class="card-title">Users</div><div class="card-desc">Client user management — view accounts, subscription status, reset.</div></div>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- §8 BUILDER OVERVIEW -->
+    <section class="section" id="builder-overview">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Visual Builder — Overview</div><div class="section-id">§8</div></div>
+      <p>The visual builder is the core product — a browser-based design tool heavily inspired by Figma's interaction model. It lives at <code>/builder</code> and is backed by a 3,200-line React page (<code>app/builder/page.tsx</code>) plus 20+ dedicated components.</p>
+      <div class="grid-2" style="margin-top:16px">
+        <div class="card"><div class="card-title">Two canvas modes</div><div class="card-desc"><strong>Free Canvas</strong> (default) — an infinite artboard where users place Frames and free elements. <strong>Block editor</strong> — a legacy sequential section editor used by the admin CMS.</div></div>
+        <div class="card"><div class="card-title">Data model</div><div class="card-desc">Projects are stored as <code>BuilderProject</code> MongoDB documents. Each project has pages, and each page stores frames (artboards) plus a flat element tree.</div></div>
+        <div class="card"><div class="card-title">Auto-save</div><div class="card-desc">Canvas state is auto-saved to the API every few seconds when changes occur. A save-status indicator (green/yellow dot) shows current state.</div></div>
+        <div class="card"><div class="card-title">Undo / Redo</div><div class="card-desc">Snapshot-based undo system. Every destructive action (move, resize, delete, add) saves a snapshot. <kbd class="kbd">⌘Z</kbd> restores the previous state.</div></div>
+      </div>
+    </section>
+
+    <!-- §9 CANVAS SYSTEM -->
+    <section class="section" id="canvas">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Canvas System</div><div class="section-id">§9</div></div>
+      <div class="sub">
+        <div class="sub-title">Infinite canvas</div>
+        <p>The canvas is an HTML div with a CSS <code>transform: translate + scale</code> applied. The viewport pans (Space+Drag or middle-mouse) and zooms (Ctrl+Scroll, pinch) without limit. Zoom range: 5% → 800%.</p>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Rulers</div>
+        <p>Horizontal and vertical Canvas-rendered rulers (using the HTML5 Canvas API) draw tick marks and labels that update in sync with pan/zoom. The ruler corner anchors at the intersection.</p>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Dot grid</div>
+        <p>A CSS <code>radial-gradient</code> background grid toggleable via the <kbd class="kbd">G</kbd> button in the toolbar. The grid pans and scales with the canvas at zero DOM cost.</p>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Snap guides</div>
+        <p>While dragging elements, red alignment lines appear when the element's edges or center align with another element's edges or center. Computed in real time using a 5px snap threshold.</p>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Rubber-band selection</div>
+        <p>Click-drag on empty canvas area draws a selection rectangle. All elements whose bounding boxes intersect the rectangle are added to the multi-selection.</p>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Context menu</div>
+        <p>Right-click on canvas opens a portal-rendered context menu with: Copy, Paste (Figma or internal), Duplicate, Bring to Front/Forward, Send Backward/Back, Delete.</p>
+      </div>
+    </section>
+
+    <!-- §10 TOOLS -->
+    <section class="section" id="tools">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Canvas Tools</div><div class="section-id">§10</div></div>
+      <p>13 tools available in the floating bottom toolbar. Shape tools (Rect, Ellipse, Line, Arrow, Polygon, Star, Image) are grouped into a single dropdown — exactly as Figma does it. The active shape is shown with a chevron; clicking the chevron opens the shape picker.</p>
+      <div style="margin-top: 12px">
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">V</kbd></div><div class="tool-name">Move</div><div class="tool-desc">Select elements, drag to reposition, resize via handles, rotate via the circle handle above the element.</div></div>
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">K</kbd></div><div class="tool-name">Scale</div><div class="tool-desc">Proportional resize — resize handles lock the aspect ratio automatically. Drag any corner to scale.</div></div>
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">H</kbd></div><div class="tool-name">Hand</div><div class="tool-desc">Pan the canvas by clicking and dragging. Space bar temporarily activates hand from any tool.</div></div>
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">F</kbd></div><div class="tool-name">Frame</div><div class="tool-desc">Drag to draw a new artboard frame anywhere on the canvas. Frame presets (Desktop/Laptop/Tablet/Mobile) available via the dropdown.</div></div>
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">P</kbd></div><div class="tool-name">Pen</div><div class="tool-desc">Click to place anchor points. Live preview line from last point to cursor. Double-click to finish — creates an SVG polyline element with the drawn path.</div></div>
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">T</kbd></div><div class="tool-name">Text</div><div class="tool-desc">Click to place a default-sized heading. Drag to define a fixed-width text box. Double-click any text to edit inline.</div></div>
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">R</kbd></div><div class="tool-name">Rectangle</div><div class="tool-desc">Drag to draw a rectangle. Shows dimensions tooltip and dashed preview during draw.</div></div>
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">O</kbd></div><div class="tool-name">Ellipse</div><div class="tool-desc">Drag to draw an ellipse (circle when shift held). Preview shows ellipse shape.</div></div>
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">L</kbd></div><div class="tool-name">Line</div><div class="tool-desc">Drag at any angle. Preview shows a dashed SVG line. Element is created as a rotated div.</div></div>
+        <div class="tool-row"><div class="tool-key"><kbd class="kbd">A</kbd></div><div class="tool-name">Arrow</div><div class="tool-desc">Same as Line but with an SVG arrowhead at the endpoint. Works on free canvas and inside frames.</div></div>
+        <div class="tool-row"><div class="tool-key">—</div><div class="tool-name">Polygon</div><div class="tool-desc">Drag to draw a hexagon shape using CSS <code>clip-path: polygon(…)</code>.</div></div>
+        <div class="tool-row"><div class="tool-key">—</div><div class="tool-name">Star</div><div class="tool-desc">Drag to draw a 5-pointed star using CSS <code>clip-path: polygon(…)</code>.</div></div>
+        <div class="tool-row"><div class="tool-key">—</div><div class="tool-name">Image</div><div class="tool-desc">Opens a file picker. Selected image is placed on the canvas (or inside the hovered frame) as an <code>img</code> element.</div></div>
+      </div>
+    </section>
+
+    <!-- §11 FRAMES -->
+    <section class="section" id="frames">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Frames</div><div class="section-id">§11</div></div>
+      <p>Frames are Figma-style artboards — named, resizable containers on the infinite canvas that hold <code>ElementNode</code> trees. They map 1-to-1 to pages in the published site.</p>
+      <div class="sub">
+        <div class="sub-title">Frame presets</div>
+        <div class="pills">
+          <span class="pill">Desktop — 1440×900</span>
+          <span class="pill">Laptop — 1280×800</span>
+          <span class="pill">Tablet — 768×1024</span>
+          <span class="pill">Mobile — 390×844</span>
+        </div>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Frame properties (Figma-style panel)</div>
+        <p>Each selected frame shows a full Figma-matched properties panel on the right sidebar with the following sections:</p>
+        <div class="grid-2">
+          <div class="card"><div class="card-title">Position</div><div class="card-desc">X, Y coordinates; Rotation (degrees); Flip Horizontal / Vertical; 9-point alignment grid for children.</div></div>
+          <div class="card"><div class="card-title">Layout</div><div class="card-desc">Flow mode (None / Horizontal / Vertical / Grid); Gap; Per-side padding; W/H with lock; Clip content toggle.</div></div>
+          <div class="card"><div class="card-title">Appearance</div><div class="card-desc">Opacity (0–100); Corner radius; Blend mode (16 options including multiply, overlay, difference…).</div></div>
+          <div class="card"><div class="card-title">Fill</div><div class="card-desc">Solid color fill with a custom color picker. Hex input + visual swatch.</div></div>
+          <div class="card"><div class="card-title">Stroke</div><div class="card-desc">Color, width, style (solid/dashed/dotted), join and cap types.</div></div>
+          <div class="card"><div class="card-title">Effects</div><div class="card-desc">Drop shadow and inner shadow. Each effect has X, Y, blur, spread, color and visibility toggle.</div></div>
+          <div class="card"><div class="card-title">Layout Grid</div><div class="card-desc">Column or row guide overlays drawn on the frame (like Figma layout grids). Configurable count, gutter, margin, and color.</div></div>
+          <div class="card"><div class="card-title">Selection Colors</div><div class="card-desc">Shows unique colors used by selected children — click to replace globally within the selection.</div></div>
+        </div>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Frame actions</div>
+        <ul class="doc-list">
+          <li>Rename frame (click name label or double-click frame header)</li>
+          <li>Resize frame by dragging its edges/corners</li>
+          <li>Move frame by dragging the header label</li>
+          <li>Publish frame → assigns it as a page in the live site</li>
+          <li>Convert frame to reusable section (saves HTML + CSS to the sections library)</li>
+          <li>Delete frame</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- §12 ELEMENTS -->
+    <section class="section" id="elements">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Elements</div><div class="section-id">§12</div></div>
+      <p>Elements are the building blocks placed inside frames or on the free canvas. The element tree (<code>ElementNode[]</code>) is a recursive structure — every element can have children.</p>
+      <div class="sub">
+        <div class="sub-title">ElementNode structure</div>
+        <div class="code-block">
+<span class="k">interface</span> ElementNode {<br>
+&nbsp;&nbsp;id:        <span class="s">string</span><br>
+&nbsp;&nbsp;tag:       <span class="s">HTMLTag</span>          <span class="c">// div, p, h1–h6, img, a, button, form…</span><br>
+&nbsp;&nbsp;content?:  <span class="s">string</span>           <span class="c">// text content for leaf nodes</span><br>
+&nbsp;&nbsp;attrs?:    <span class="s">Record&lt;string, string&gt;</span>  <span class="c">// href, src, alt, data-svg…</span><br>
+&nbsp;&nbsp;styles:    <span class="s">{ desktop, tablet?, mobile? }</span>  <span class="c">// responsive overrides</span><br>
+&nbsp;&nbsp;children:  <span class="s">ElementNode[]</span><br>
+&nbsp;&nbsp;layout?:   <span class="s">FreeLayout</span>       <span class="c">// canvas position &amp; sizing</span><br>
+&nbsp;&nbsp;animation?: <span class="s">AnimationConfig</span>  <span class="c">// motion &amp; interaction config</span><br>
+}
+        </div>
+      </div>
+      <div class="sub">
+        <div class="sub-title">FreeLayout — canvas position</div>
+        <div class="code-block">
+<span class="k">interface</span> FreeLayout {<br>
+&nbsp;&nbsp;x, y:      <span class="s">number</span>          <span class="c">// canvas coordinates</span><br>
+&nbsp;&nbsp;width:     <span class="s">number</span><br>
+&nbsp;&nbsp;height?:   <span class="s">number</span><br>
+&nbsp;&nbsp;rotation?: <span class="s">number</span>          <span class="c">// degrees</span><br>
+&nbsp;&nbsp;zIndex?:   <span class="s">number</span><br>
+&nbsp;&nbsp;widthMode?:  <span class="s">"fixed" | "hug" | "fill"</span>   <span class="c">// Figma sizing modes</span><br>
+&nbsp;&nbsp;heightMode?: <span class="s">"fixed" | "hug" | "fill"</span><br>
+&nbsp;&nbsp;constraints?: { horizontal, vertical }  <span class="c">// resize behaviour</span><br>
+}
+        </div>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Available element types</div>
+        <div class="grid-3">
+          <div class="card"><div class="card-title">Layout</div><div class="card-desc">Section, Flex container, Grid container, Div</div></div>
+          <div class="card"><div class="card-title">Typography</div><div class="card-desc">H1–H4, Paragraph, Span, Blockquote</div></div>
+          <div class="card"><div class="card-title">Navigation</div><div class="card-desc">Nav, Header, Footer, Link</div></div>
+          <div class="card"><div class="card-title">Media</div><div class="card-desc">Image, Video, SVG embed, Pen path</div></div>
+          <div class="card"><div class="card-title">Form</div><div class="card-desc">Form, Input, Textarea, Select, Checkbox, Button</div></div>
+          <div class="card"><div class="card-title">Shapes</div><div class="card-desc">Rectangle, Ellipse, Line, Arrow, Polygon (hexagon), Star</div></div>
+        </div>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Styles — the Styles type</div>
+        <p>Each element holds three responsive style objects: <code>desktop</code> (required), <code>tablet</code>, <code>mobile</code> (both optional overrides). The Styles interface covers 100+ CSS properties across: layout, sizing, spacing, typography, background, border, effects, position, overflow, transform, animation, and shapes (<code>clipPath</code>).</p>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Drag-and-drop from panel</div>
+        <p>Elements can be dragged from the Add Panel (left sidebar) directly onto the canvas. The drop position is computed from the mouse location relative to the canvas transform, and the element is routed to the correct frame if dropped inside one.</p>
+      </div>
+    </section>
+
+    <!-- §13 PROPERTIES PANELS -->
+    <section class="section" id="properties">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Properties Panels</div><div class="section-id">§13</div></div>
+      <p>The right sidebar changes based on what is selected.</p>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">FramePropertiesPanel</div><div class="card-desc">Shown when a Frame is selected. Full Figma-matched panel with Position, Layout, Appearance, Fill, Stroke, Effects, Layout Grid, Selection Colors.</div></div>
+        <div class="card"><div class="card-title">CanvasPropertiesPanel</div><div class="card-desc">Shown when free-canvas elements are selected. Controls position X/Y, size W/H, rotation, and links to the element's styles.</div></div>
+        <div class="card"><div class="card-title">StylesPanel</div><div class="card-desc">Deep CSS style editor: typography, spacing box model, color, border, shadow, filter, background.</div></div>
+        <div class="card"><div class="card-title">PropertiesPanel</div><div class="card-desc">Element-specific properties: link href, image src/alt, form action, animation config, motion section.</div></div>
+        <div class="card"><div class="card-title">ColorPicker</div><div class="card-desc">Custom color picker component with hex input, hue/saturation canvas, opacity slider, and eyedropper.</div></div>
+        <div class="card"><div class="card-title">AlignToolbar</div><div class="card-desc">Shown in toolbar when multiple elements are selected: align left/center/right, top/center/bottom, distribute horizontal/vertical.</div></div>
+      </div>
+    </section>
+
+    <!-- §14 AUTO-LAYOUT -->
+    <section class="section" id="autolayout">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Auto-Layout</div><div class="section-id">§14</div></div>
+      <p>When a frame's <code>layoutMode</code> is set to Horizontal, Vertical, or Grid, its children switch from absolute-positioned react-rnd elements to a CSS flex/grid layout — exactly matching Figma's auto-layout behaviour.</p>
+      <div class="grid-3">
+        <div class="card"><div class="card-title">None (default)</div><div class="card-desc">Children are absolutely positioned and freely draggable via react-rnd.</div></div>
+        <div class="card"><div class="card-title">Horizontal / Vertical</div><div class="card-desc">Children rendered as CSS <code>display: flex</code> with configurable gap and padding. Alignment controlled via justify-content / align-items.</div></div>
+        <div class="card"><div class="card-title">Grid</div><div class="card-desc">Children rendered in a CSS grid with configurable column count and gap.</div></div>
+      </div>
+      <p style="margin-top:12px">Auto-layout properties include: per-side padding (top/right/bottom/left), gap, justify-content, align-items, and grid column count. The Frame properties panel exposes all of these with live preview.</p>
+    </section>
+
+    <!-- §15 LAYERS PANEL -->
+    <section class="section" id="layers">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Layers Panel</div><div class="section-id">§15</div></div>
+      <p>The left sidebar shows a collapsible tree view of all frames and their child elements. Features:</p>
+      <ul class="doc-list">
+        <li>Hierarchical display with expand/collapse for grouped elements</li>
+        <li>Click to select element on canvas (syncs with canvas selection)</li>
+        <li>Drag-to-reorder within the same parent</li>
+        <li>Rename via double-click</li>
+        <li>Visibility toggle (eye icon) — hides element without deleting</li>
+        <li>Lock toggle — prevents accidental selection/move on canvas</li>
+        <li>Frame list at the top level, with children nested beneath</li>
+      </ul>
+    </section>
+
+    <!-- §16 FIGMA PASTE -->
+    <section class="section" id="figma">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Figma Copy-Paste</div><div class="section-id">§16</div></div>
+      <p>Select elements in Figma, press <kbd class="kbd">⌘C</kbd>, then press <kbd class="kbd">⌘V</kbd> in the builder canvas — the selected Figma elements appear as fully editable builder elements.</p>
+      <div class="sub">
+        <div class="sub-title">How it works</div>
+        <p>Figma writes its own proprietary MIME type (<code>application/vnd.figma.clipboard.v5+json</code> down to <code>v2</code>) to the clipboard. The builder reads these types via a <code>paste</code> event handler (<code>ClipboardEvent.clipboardData.getData()</code>) — which requires no browser permission.</p>
+        <p><strong>Critical implementation detail:</strong> All clipboard data must be read synchronously in the paste event handler before any <code>await</code>, because browsers recycle the <code>DataTransfer</code> object when the event handler returns. The builder reads all raw data first, calls <code>e.preventDefault()</code> synchronously, then processes data asynchronously.</p>
+      </div>
+      <div class="sub">
+        <div class="sub-title">What gets converted</div>
+        <div class="grid-2">
+          <div class="card"><div class="card-title">Node types</div><div class="card-desc">TEXT → heading/paragraph; RECTANGLE, ELLIPSE → shape divs; FRAME, GROUP, COMPONENT, INSTANCE → container divs with children; LINE, VECTOR → styled divs; BOOLEAN_OPERATION → div.</div></div>
+          <div class="card"><div class="card-title">Design properties</div><div class="card-desc">Solid fills → backgroundColor; Gradient fills → CSS linear/radial-gradient; Strokes → border; Drop/inner shadow effects → box-shadow; Opacity, cornerRadius, typography, font weight, italic, letter-spacing — all preserved.</div></div>
+        </div>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Fallback inputs</div>
+        <p>If no Figma data is found, the paste handler checks for: SVG text (via <code>image/svg+xml</code> or <code>text/plain</code> starting with <code>&lt;svg</code>) → placed as an <code>img</code> data URI. Image files (PNG/JPEG/GIF/WEBP) → placed as an <code>img</code> element. Internal builder clipboard → duplicate elements.</p>
+      </div>
+    </section>
+
+    <!-- §17 AI -->
+    <section class="section" id="ai">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">AI Generation</div><div class="section-id">§17</div></div>
+      <p>AI features use Google Gemini 2.5 Flash via the <code>@google/generative-ai</code> SDK. All AI calls return structured JSON that maps directly to the builder's data model.</p>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">Full site generation</div><div class="card-desc">Enter a business name and tagline → Gemini generates a complete multi-page website with all sections, copy, and styles. Creates the <code>BuilderProject</code> document with all pages and blocks.</div></div>
+        <div class="card"><div class="card-title">Page generation</div><div class="card-desc">Within an existing project, generate all content blocks for a specific page using the business context already stored in the project.</div></div>
+        <div class="card"><div class="card-title">Block regeneration</div><div class="card-desc">Regenerate a single block (hero, features, testimonials, etc.) with fresh content while keeping surrounding blocks unchanged. Optional extra context prompt supported.</div></div>
+        <div class="card"><div class="card-title">Element generation</div><div class="card-desc">Generate individual elements on the free canvas from a prompt. Returns an <code>ElementNode</code> tree placed at the cursor position.</div></div>
+        <div class="card"><div class="card-title">Animation generation</div><div class="card-desc">AI suggests and applies animation configurations to selected elements — entrance, hover, and scroll-triggered animations.</div></div>
+        <div class="card"><div class="card-title">Element animation</div><div class="card-desc">Via the motion section in the properties panel, AI can suggest animation parameters (duration, easing, delay, keyframes) for the selected element type.</div></div>
+      </div>
+    </section>
+
+    <!-- §18 SHORTCUTS -->
+    <section class="section" id="shortcuts">
+      <div class="section-header"><div class="section-bar"></div><div class="section-title">Keyboard Shortcuts</div><div class="section-id">§18</div></div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>Key</th><th>Action</th><th>Key</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd class="kbd">V</kbd></td><td>Move tool</td><td><kbd class="kbd">K</kbd></td><td>Scale tool</td></tr>
+          <tr><td><kbd class="kbd">H</kbd></td><td>Hand / pan tool</td><td><kbd class="kbd">F</kbd></td><td>Frame tool</td></tr>
+          <tr><td><kbd class="kbd">P</kbd></td><td>Pen tool</td><td><kbd class="kbd">T</kbd></td><td>Text tool</td></tr>
+          <tr><td><kbd class="kbd">R</kbd></td><td>Rectangle</td><td><kbd class="kbd">O</kbd></td><td>Ellipse</td></tr>
+          <tr><td><kbd class="kbd">L</kbd></td><td>Line</td><td><kbd class="kbd">A</kbd></td><td>Arrow</td></tr>
+          <tr><td><kbd class="kbd">Esc</kbd></td><td>Back to Move / cancel</td><td><kbd class="kbd">Space</kbd></td><td>Temporary hand (any tool)</td></tr>
+          <tr><td><kbd class="kbd">⌘Z</kbd></td><td>Undo</td><td><kbd class="kbd">⌘D</kbd></td><td>Duplicate selection</td></tr>
+          <tr><td><kbd class="kbd">⌘C</kbd></td><td>Copy</td><td><kbd class="kbd">⌘V</kbd></td><td>Paste (Figma / internal)</td></tr>
+          <tr><td><kbd class="kbd">⌘A</kbd></td><td>Select all</td><td><kbd class="kbd">Del / ⌫</kbd></td><td>Delete selection</td></tr>
+          <tr><td><kbd class="kbd">↑↓←→</kbd></td><td>Nudge 1px</td><td><kbd class="kbd">⇧ + Arrow</kbd></td><td>Nudge 10px</td></tr>
+          <tr><td><kbd class="kbd">]</kbd></td><td>Forward one layer</td><td><kbd class="kbd">⇧]</kbd></td><td>Bring to front</td></tr>
+          <tr><td><kbd class="kbd">[</kbd></td><td>Back one layer</td><td><kbd class="kbd">⇧[</kbd></td><td>Send to back</td></tr>
+          <tr><td><kbd class="kbd">⌘0</kbd></td><td>Fit to screen</td><td><kbd class="kbd">⌘1</kbd></td><td>100% zoom</td></tr>
+          <tr><td><kbd class="kbd">⌘+</kbd></td><td>Zoom in</td><td><kbd class="kbd">⌘−</kbd></td><td>Zoom out</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <hr>
+
+    <!-- §19 EXPORT -->
+    <section class="section" id="export">
+      <div class="section-header"><div class="section-bar teal"></div><div class="section-title">Export System</div><div class="section-id">§19</div></div>
+      <p>The export modal lets users download their built pages as production-ready code. All exports are generated server-side and delivered as zip archives.</p>
+      <div class="grid-3">
+        <div class="card"><div class="card-title">HTML + CSS</div><div class="card-desc">A flat <code>index.html</code> with an inline <code>&lt;style&gt;</code> block and a companion <code>styles.css</code>. Clean, semantic markup generated from the element tree.</div></div>
+        <div class="card"><div class="card-title">Next.js</div><div class="card-desc">A complete Next.js App Router project scaffold with page components, layout, and globals.css. Ready to <code>npm install &amp;&amp; npm run dev</code>.</div></div>
+        <div class="card"><div class="card-title">Laravel</div><div class="card-desc">A Laravel Blade template project with the page markup converted to Blade views and CSS in the public assets directory.</div></div>
+      </div>
+      <div class="sub" style="margin-top:16px">
+        <div class="sub-title">Generation pipeline</div>
+        <p>The element tree is traversed by <code>lib/generateHTML.ts</code> and <code>lib/generateCSS.ts</code>. Each ElementNode is rendered to HTML using its tag, content, attrs, and a generated class name. The Styles objects are converted to CSS rules by <code>lib/stylesToCSS.ts</code>, handling responsive breakpoints for tablet/mobile overrides. The output is zipped by Archiver and streamed back to the browser.</p>
+      </div>
+    </section>
+
+    <!-- §20 PUBLISHING -->
+    <section class="section" id="publishing">
+      <div class="section-header"><div class="section-bar teal"></div><div class="section-title">Publishing &amp; Domains</div><div class="section-id">§20</div></div>
+      <p>Frames can be published as live pages visible to the public without any export step.</p>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">Subdomain publishing</div><div class="card-desc">Each project gets a unique URL at <code>/site/[projectId]</code> on the platform domain. Pages are rendered server-side from the stored element tree.</div></div>
+        <div class="card"><div class="card-title">Custom domain</div><div class="card-desc">Users can add their own domain. The system generates a DNS TXT verification token (<code>_lhrweb-verify.domain = token</code>). After DNS verification, the domain routes to the project.</div></div>
+        <div class="card"><div class="card-title">Slug routing</div><div class="card-desc">Each published page has a slug. The <code>/by-slug/:slug</code> API resolves pages by slug, and <code>/by-domain/:domain</code> resolves by custom domain for CDN/proxy routing.</div></div>
+        <div class="card"><div class="card-title">Analytics</div><div class="card-desc">Basic analytics endpoint at <code>GET /api/builder/analytics</code> — tracks page views against published sites.</div></div>
+      </div>
+    </section>
+
+    <!-- §21 SUBSCRIPTIONS -->
+    <section class="section" id="subscriptions">
+      <div class="section-header"><div class="section-bar teal"></div><div class="section-title">Subscriptions</div><div class="section-id">§21</div></div>
+      <p>Stripe-powered subscription system with two plans. The <code>subscriptionCheck</code> middleware guards builder routes from unauthenticated or unsubscribed users.</p>
+      <div class="grid-2">
+        <div class="card"><div class="card-title">Starter Plan</div><div class="card-desc">Entry-level access to the builder with basic AI generation credits and standard export.</div></div>
+        <div class="card"><div class="card-title">Pro Plan</div><div class="card-desc">Full access including custom domains, higher AI generation limits, and all export formats.</div></div>
+      </div>
+      <div class="sub" style="margin-top:16px">
+        <div class="sub-title">Stripe integration</div>
+        <ul class="doc-list">
+          <li>Stripe Checkout Session created server-side with plan metadata</li>
+          <li>Webhook endpoint receives <code>checkout.session.completed</code> events</li>
+          <li>Subscription document created/updated in MongoDB on successful payment</li>
+          <li>Payment confirmation email sent via Nodemailer</li>
+          <li>Webhook events deduplicated by <code>stripeEventId</code> to prevent replay</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- §22 API -->
+    <section class="section" id="api">
+      <div class="section-header"><div class="section-bar teal"></div><div class="section-title">Backend API</div><div class="section-id">§22</div></div>
+      <div class="sub">
+        <div class="sub-title">Builder routes — <code>/api/builder</code></div>
+        <div class="endpoint"><span class="method GET">GET</span><span class="ep-path">/projects</span><span class="ep-desc">All projects for authenticated user</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/init-manual</span><span class="ep-desc">Create project manually</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/generate</span><span class="ep-desc">AI — generate full site</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/generate-page</span><span class="ep-desc">AI — generate one page's blocks</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/regenerate-block</span><span class="ep-desc">AI — regenerate a single block</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/generate-elements</span><span class="ep-desc">AI — generate canvas elements</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/animate-element</span><span class="ep-desc">AI — suggest animations</span></div>
+        <div class="endpoint"><span class="method GET">GET</span><span class="ep-path">/project</span><span class="ep-desc">Load single project</span></div>
+        <div class="endpoint"><span class="method PUT">PUT</span><span class="ep-path">/project/pages/:pageId</span><span class="ep-desc">Save page element tree</span></div>
+        <div class="endpoint"><span class="method PUT">PUT</span><span class="ep-path">/project/settings</span><span class="ep-desc">Update project metadata</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/project/sections</span><span class="ep-desc">Save reusable section</span></div>
+        <div class="endpoint"><span class="method GET">GET</span><span class="ep-path">/by-slug/:slug</span><span class="ep-desc">Public — resolve page by slug</span></div>
+        <div class="endpoint"><span class="method GET">GET</span><span class="ep-path">/by-domain/:domain</span><span class="ep-desc">Public — resolve by custom domain</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/:id/custom-domain</span><span class="ep-desc">Set custom domain, get TXT token</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/:id/verify-domain</span><span class="ep-desc">Check DNS TXT record</span></div>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Export routes — <code>/api/export</code></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/elements</span><span class="ep-desc">Export V2 — clean HTML+CSS zip</span></div>
+        <div class="endpoint"><span class="method POST">POST</span><span class="ep-path">/</span><span class="ep-desc">Export — html | nextjs | laravel zip</span></div>
+      </div>
+      <div class="sub">
+        <div class="sub-title">Other route groups</div>
+        <div class="grid-2">
+          <div class="card"><div class="card-title"><code>/api/auth</code></div><div class="card-desc">Client register, login, forgot/reset password, refresh token.</div></div>
+          <div class="card"><div class="card-title"><code>/api/admin</code></div><div class="card-desc">Admin auth — separate login/register with admin-role check.</div></div>
+          <div class="card"><div class="card-title"><code>/api/blogs</code></div><div class="card-desc">CRUD for blog posts, public list endpoint.</div></div>
+          <div class="card"><div class="card-title"><code>/api/services</code></div><div class="card-desc">CRUD for agency services, slug-based public lookup.</div></div>
+          <div class="card"><div class="card-title"><code>/api/projects</code></div><div class="card-desc">Portfolio projects CRUD (different from builder projects).</div></div>
+          <div class="card"><div class="card-title"><code>/api/sections</code></div><div class="card-desc">Reusable section library — list, add, edit, delete.</div></div>
+          <div class="card"><div class="card-title"><code>/api/pages</code></div><div class="card-desc">CMS pages CRUD with block arrays.</div></div>
+          <div class="card"><div class="card-title"><code>/api/leads</code></div><div class="card-desc">Public form submission POST, admin list GET.</div></div>
+          <div class="card"><div class="card-title"><code>/api/menu</code></div><div class="card-desc">Nav tree CRUD.</div></div>
+          <div class="card"><div class="card-title"><code>/api/footer</code></div><div class="card-desc">Footer content CRUD.</div></div>
+          <div class="card"><div class="card-title"><code>/api/upload</code></div><div class="card-desc">File upload endpoint (Multer, single file).</div></div>
+          <div class="card"><div class="card-title"><code>/api/subscriptions</code></div><div class="card-desc">Stripe checkout, webhook handler, subscription status.</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §23 FILE STRUCTURE -->
+    <section class="section" id="filestructure">
+      <div class="section-header"><div class="section-bar teal"></div><div class="section-title">File Structure</div><div class="section-id">§23</div></div>
+      <div class="code-block">
+<span class="s">lhrweb/</span><br>
+├── <span class="k">frontend/</span>  (Next.js 15 + TypeScript)<br>
+│   ├── app/<br>
+│   │   ├── (auth)/           <span class="c"># client login/register/reset</span><br>
+│   │   ├── (frontend)/       <span class="c"># public website pages</span><br>
+│   │   ├── (dashboard)/      <span class="c"># client dashboard</span><br>
+│   │   ├── admin/            <span class="c"># admin CMS (auth + root)</span><br>
+│   │   └── builder/          <span class="c"># visual builder</span><br>
+│   │       ├── page.tsx      <span class="c"># 3,200 lines — main builder orchestrator</span><br>
+│   │       └── _components/  <span class="c"># 20+ builder-specific components</span><br>
+│   ├── lib/                  <span class="c"># utilities: generateHTML, generateCSS, parseFigmaClipboard…</span><br>
+│   └── types/builder.ts      <span class="c"># all TypeScript interfaces for the builder</span><br>
+│<br>
+└── <span class="k">backend/</span>  (Express.js)<br>
+    ├── app.js                <span class="c"># Express setup, middleware, route mounting</span><br>
+    ├── routes/               <span class="c"># 16 route files</span><br>
+    ├── models/               <span class="c"># 12 Mongoose models</span><br>
+    ├── middleware/           <span class="c"># auth, subscriptionCheck, upload, validate, errorHandler</span><br>
+    ├── generators/           <span class="c"># html.js, nextjs.js, laravel.js — export code generators</span><br>
+    └── controllers/          <span class="c"># userController</span><br>
+      </div>
+      <div class="sub" style="margin-top:16px">
+        <div class="sub-title">Key builder components</div>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>File</th><th>Responsibility</th><th>Size</th></tr></thead>
+          <tbody>
+            <tr><td><code>page.tsx</code></td><td>Root orchestrator — all state, routing, AI, and save logic</td><td>~3,200 ln</td></tr>
+            <tr><td><code>FreeCanvas.tsx</code></td><td>Infinite canvas, tools, keyboard, snap, rubber-band, pen, draw preview</td><td>~1,400 ln</td></tr>
+            <tr><td><code>FramePropertiesPanel.tsx</code></td><td>Figma-matched frame design panel with all 8 sections</td><td>~750 ln</td></tr>
+            <tr><td><code>FrameContent.tsx</code></td><td>Renders frame children as react-rnd elements or auto-layout flex/grid</td><td>~490 ln</td></tr>
+            <tr><td><code>parseFigmaClipboard.ts</code></td><td>Figma → ElementNode converter, SVG and image paste support</td><td>~430 ln</td></tr>
+            <tr><td><code>Frame.tsx</code></td><td>Single frame rendering — applies all visual properties as CSS</td><td>~200 ln</td></tr>
+            <tr><td><code>FreeElement.tsx</code></td><td>Recursive element renderer — handles SVG, arrows, data-svg pen paths</td><td>~60 ln</td></tr>
+            <tr><td><code>LayersPanel.tsx</code></td><td>Collapsible tree of frames + element hierarchy</td><td>~180 ln</td></tr>
+            <tr><td><code>ColorPicker.tsx</code></td><td>Custom colour picker with hex, hue-sat canvas, opacity slider</td><td>~200 ln</td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

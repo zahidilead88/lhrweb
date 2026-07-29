@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || `${API}`;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface Lead {
   _id: string;

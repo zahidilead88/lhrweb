@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { gsap } from "gsap";
 
-const API          = process.env.NEXT_PUBLIC_API_URL || `${API}`;
+const API          = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const BG           = 0x0f0f0f;
 const SEGMENTS     = 24;
 const SEG_W        = 18;

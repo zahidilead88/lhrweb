@@ -5,9 +5,9 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 import { useRef } from "react";
 
 export default function AboutCarousel({ section }: { section: any }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   if (!section) return null;
   const items: { title: string; content: string }[] = section.accordion || [];
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const scroll = (dir: "left" | "right") => {
     if (!scrollRef.current) return;

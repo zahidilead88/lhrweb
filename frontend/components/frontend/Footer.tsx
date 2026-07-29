@@ -56,7 +56,7 @@ const Footer = () => {
   const [data, setData] = useState<FooterData>(DEFAULT_FOOTER);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || `${API}`}/api/footer`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/footer`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch");
         return res.json();

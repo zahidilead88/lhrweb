@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -17,7 +18,7 @@ interface ProjectSlide {
   buttonText?: string;
 }
 
-const HomeProjects = ({ section, extras }: { section?: any; extras?: SectionExtras }) => {
+const HomeProjects = ({ extras }: { section?: any; extras?: SectionExtras }) => {
   const slides = (extras?.projects ?? []) as ProjectSlide[];
   const sectionRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);

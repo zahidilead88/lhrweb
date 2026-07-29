@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 
 const HomeFaq = ({ section }: { section: any }) => {
-  if (!section) return null;
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  if (!section) return null;
 
   const toggleAccordion = (index: number) => {
     setOpenIndex((prevIndex) => (prevIndex === index ? null : index));

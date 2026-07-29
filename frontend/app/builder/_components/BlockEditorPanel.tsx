@@ -220,17 +220,43 @@ function ItemEditor({ item, idx, fields, isOpen, onToggle, onUpdate, onDelete }:
 
 // ── Main unified panel ────────────────────────────────────────────────────────
 
-export default function BlockEditorPanel({ block, onChange, onStyleChange, onClose, onEditVisually }: {
+const REWRITE_TONES = ["professional", "friendly", "confident", "playful", "luxury"] as const;
+
+export default function BlockEditorPanel({ block, onChange, onStyleChange, onClose, onRewrite }: {
   block: Block;
   onChange: (b: Block) => void;
   onStyleChange: (styles: BlockStyles) => void;
   onClose: () => void;
-  onEditVisually?: () => void;
+  // Round 5 Ch 5.2 — returns 3 copy variants for a text field
+  onRewrite?: (text: string, tone: string) => Promise<string[]>;
 }) {
   const [tab, setTab] = useState<"content" | "style" | "advanced">("content");
   const [openItemIdx, setOpenItemIdx]   = useState<number | null>(null);
   const [openExtraIdx, setOpenExtraIdx] = useState<number | null>(null);
   const [openStyleSects, setOpenStyleSects] = useState<Set<string>>(() => new Set(["layout", "background"]));
+
+  // ── AI rewrite state (one active field at a time) ────────────────────────────
+  const [rewriteField, setRewriteField]       = useState<string | null>(null);
+  const [rewriteTone, setRewriteTone]         = useState<string>("professional");
+  const [rewriteVariants, setRewriteVariants] = useState<string[] | null>(null);
+  const [rewriteLoading, setRewriteLoading]   = useState(false);
+
+  const startRewrite = async (fieldKey: string, text: string, tone = rewriteTone) => {
+    if (!onRewrite || !text.trim()) return;
+    setRewriteField(fieldKey);
+    setRewriteTone(tone);
+    setRewriteVariants(null);
+    setRewriteLoading(true);
+    try {
+      const variants = await onRewrite(text, tone);
+      setRewriteVariants(variants);
+    } catch {
+      setRewriteField(null);
+    } finally {
+      setRewriteLoading(false);
+    }
+  };
+  const closeRewrite = () => { setRewriteField(null); setRewriteVariants(null); };
 
   // ── Content helpers ──────────────────────────────────────────────────────────
   const fields       = BLOCK_FIELDS[block.type] ?? [];
@@ -258,7 +284,11 @@ export default function BlockEditorPanel({ block, onChange, onStyleChange, onClo
   // ── Style helpers ────────────────────────────────────────────────────────────
   const styles = block.styles ?? {};
   const upd    = (patch: Partial<BlockStyles>) => onStyleChange({ ...styles, ...patch });
-  const toggleStyle = (s: string) => setOpenStyleSects((prev) => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
+  const toggleStyle = (s: string) => setOpenStyleSects((prev) => {
+    const n = new Set(prev);
+    if (n.has(s)) n.delete(s); else n.add(s);
+    return n;
+  });
   const hasCards = CARD_BLOCK_TYPES.includes(block.type);
   const hasGrid  = GRID_BLOCK_TYPES.includes(block.type);
 
@@ -284,11 +314,6 @@ export default function BlockEditorPanel({ block, onChange, onStyleChange, onClo
             </div>
           </div>
           <div className="flex items-center gap-1">
-            {onEditVisually && (
-              <button onClick={onEditVisually} className="px-3 py-1.5 rounded-lg text-[11px] font-bold bg-gray-50 text-gray-600 hover:bg-[#6344d4]/10 hover:text-[#6344d4] transition-all flex items-center gap-1.5 border border-gray-100">
-                <LayoutGrid size={12} /> Edit Layout
-              </button>
-            )}
             <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-all">
               <X size={16} />
             </button>
@@ -332,13 +357,55 @@ export default function BlockEditorPanel({ block, onChange, onStyleChange, onClo
                       );
                     }
                     const val = String(block.content[f.key] ?? "");
+                    const canRewrite = !!onRewrite && f.type !== "url" && val.trim().length > 3;
                     return (
                       <div key={f.key}>
-                        <label className={lblCls}>{f.label}</label>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{f.label}</label>
+                          {canRewrite && (
+                            <button
+                              onClick={() => rewriteField === f.key ? closeRewrite() : startRewrite(f.key, val)}
+                              className="flex items-center gap-1 text-[10px] font-bold text-[#6344d4] hover:text-[#4c2fc4] transition-colors"
+                              title="Rewrite with AI"
+                            >
+                              <Sparkles size={10} /> Rewrite
+                            </button>
+                          )}
+                        </div>
                         {f.type === "textarea" ? (
                           <textarea className={areaCls} value={val} onChange={(e) => set({ [f.key]: e.target.value })} />
                         ) : (
                           <input type={f.type === "url" ? "url" : "text"} className={inputCls} value={val} onChange={(e) => set({ [f.key]: e.target.value })} />
+                        )}
+
+                        {/* AI rewrite variants (Round 5 Ch 5.2 — pick one of 3) */}
+                        {rewriteField === f.key && (
+                          <div className="mt-2 border border-[#6344d4]/20 bg-[#6344d4]/[0.04] rounded-xl p-3 space-y-2">
+                            <div className="flex flex-wrap gap-1">
+                              {REWRITE_TONES.map((t) => (
+                                <button key={t}
+                                  onClick={() => startRewrite(f.key, val, t)}
+                                  className={`px-2 py-1 text-[10px] font-bold rounded-lg capitalize transition-all ${
+                                    rewriteTone === t ? "bg-[#6344d4] text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-[#6344d4]/40"
+                                  }`}
+                                >
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
+                            {rewriteLoading ? (
+                              <p className="text-[11px] text-gray-400 py-2 animate-pulse">Writing 3 options…</p>
+                            ) : (
+                              rewriteVariants?.map((v, i) => (
+                                <button key={i}
+                                  onClick={() => { set({ [f.key]: v }); closeRewrite(); }}
+                                  className="block w-full text-left px-3 py-2 text-[11px] text-gray-700 bg-white border border-gray-100 rounded-lg hover:border-[#6344d4]/50 hover:bg-[#6344d4]/[0.03] transition-all"
+                                >
+                                  {v}
+                                </button>
+                              ))
+                            )}
+                          </div>
                         )}
                       </div>
                     );

@@ -4,7 +4,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 import Image from "next/image";
 import Link from "next/link";
-import type { SectionExtras } from "../../SectionRenderer";
+import type { SectionExtras } from "../SectionRenderer";
 
 const ROTATIONS = [-18, -8, 2, 10, 20];
 
