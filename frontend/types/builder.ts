@@ -183,6 +183,8 @@ export interface FreeLayout {
   height?: number;
   rotation?: number;
   zIndex?: number;
+  // Phase 1 — lock W/H ratio during any corner-handle resize
+  aspectLocked?: boolean;
   // Figma-style sizing: fixed (px), hug (fit-content), fill (100%/flex:1)
   widthMode?: "fixed" | "hug" | "fill";
   heightMode?: "fixed" | "hug" | "fill";

@@ -122,6 +122,15 @@ app.use("/api/export", exportRoutes);
 
 app.use("/api/subscriptions", subscriptionRouter);
 
+// Part 6 — commerce catalog (products/collections) + CMS (collections/entries).
+// Cart/checkout/order/webhook routes are deliberately not mounted yet — see
+// routes/commerce.js header comment.
+const commerceRoutes = require("./routes/commerce");
+app.use("/api/commerce", commerceRoutes);
+
+const cmsRoutes = require("./routes/cms");
+app.use("/api/cms-collections", cmsRoutes);
+
 // ── Normalise a stored page slug to a clean identifier ─────────────────────
 // Old data used URL paths like "/", "/projects", "/secvices" as slugs.
 // New data should use identifiers like "home", "projects", "services".

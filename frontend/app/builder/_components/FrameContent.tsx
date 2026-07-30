@@ -166,6 +166,7 @@ export default function FrameContent({
   const [editingText, setEditingText] = useState("");
   const [dragInfo,    setDragInfo]    = useState<{ id: string; x: number; y: number; w: number; h: number } | null>(null);
   const [ctxMenu,     setCtxMenu]     = useState<{ x: number; y: number; elId: string } | null>(null);
+  const [shiftHeld,   setShiftHeld]   = useState(false);
   const snapshotsRef = useRef<ElementNode[][]>([]);
 
   const handleStyles = makeHandleStyles(scale);
@@ -176,10 +177,28 @@ export default function FrameContent({
   const [rb, setRb] = useState<{ sx: number; sy: number; ex: number; ey: number } | null>(null);
   const rbStartRef   = useRef<{ sx: number; sy: number } | null>(null);
   const isDraggingRb = useRef(false);
+  const futureRef    = useRef<ElementNode[][]>([]);
 
+  // Snapshots were being pushed here on every mutation but never consumed — elements
+  // inside a frame had no undo at all. saveSnapshot/undo/redo close that gap.
   const saveSnapshot = useCallback(() => {
     snapshotsRef.current = [...snapshotsRef.current.slice(-20), JSON.parse(JSON.stringify(elements))];
+    futureRef.current = []; // a new action invalidates the redo stack
   }, [elements]);
+
+  const undo = useCallback(() => {
+    if (!snapshotsRef.current.length) return;
+    const prev = snapshotsRef.current.pop()!;
+    futureRef.current = [...futureRef.current.slice(-20), JSON.parse(JSON.stringify(elements))];
+    onElementsChange(prev);
+  }, [elements, onElementsChange]);
+
+  const redo = useCallback(() => {
+    if (!futureRef.current.length) return;
+    const next = futureRef.current.pop()!;
+    snapshotsRef.current = [...snapshotsRef.current, JSON.parse(JSON.stringify(elements))];
+    onElementsChange(next);
+  }, [elements, onElementsChange]);
 
   const commitEdit = useCallback(() => {
     if (editingId) onUpdateContent?.(editingId, editingText);
@@ -316,6 +335,7 @@ export default function FrameContent({
   // ── Keyboard shortcuts (frame-element scope) ───────────────────────────────
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Shift") setShiftHeld(true);
       const tag = (e.target as HTMLElement)?.tagName;
       if (["INPUT", "TEXTAREA"].includes(tag)) return;
 
@@ -327,6 +347,8 @@ export default function FrameContent({
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "a") { e.preventDefault(); onSelectAll(); return; }
       if (e.shiftKey && !e.metaKey && !e.ctrlKey && e.code === "KeyA") { e.preventDefault(); autoLayoutSelected(); return; }
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); return; }
+      if ((e.metaKey || e.ctrlKey) && ((e.key === "z" && e.shiftKey) || e.key === "y")) { e.preventDefault(); redo(); return; }
       if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); onDeleteSelected(); return; }
       // Ctrl/Cmd+V handled by page.tsx paste listener — don't prevent default here
 
@@ -338,9 +360,14 @@ export default function FrameContent({
         onNudge(dx, dy);
       }
     };
+    const onKeyUp = (e: KeyboardEvent) => { if (e.key === "Shift") setShiftHeld(false); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [selectedIds, onDeselect, onSelectAll, onDeleteSelected, onNudge, groupSelected, ungroupSelected, autoLayoutSelected]);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  }, [selectedIds, onDeselect, onSelectAll, onDeleteSelected, onNudge, groupSelected, ungroupSelected, autoLayoutSelected, undo, redo]);
 
   // ── Rubber-band on frame body empty space ──────────────────────────────────
   const handleBodyMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -489,6 +516,7 @@ export default function FrameContent({
               transformOrigin: el.layout?.rotation ? "0 50%" : undefined,
             }}
             enableResizing={singleSel}
+            lockAspectRatio={shiftHeld || !!el.layout?.aspectLocked}
             disableDragging={false}
             handleStyles={handleStyles}
             bounds="parent"

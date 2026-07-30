@@ -147,15 +147,17 @@ export interface CanvasPropertiesPanelProps {
   breakpoint: "desktop" | "tablet" | "mobile";
   onStyleChange: (prop: string, val: string) => void;
   onContentChange?: (content: string) => void;
-  layout?: { x: number; y: number; width: number; height: number };
-  onLayoutChange?: (field: string, val: number | string | Record<string, unknown>) => void;
+  layout?: { x: number; y: number; width: number; height: number; aspectLocked?: boolean };
+  onLayoutChange?: (field: string, val: number | string | boolean | Record<string, unknown>) => void;
+  /** Turns this container's free-positioned children into a flex flow (Figma "Add Auto Layout") */
+  onAddAutoLayout?: () => void;
   /** When element is inside an auto-layout frame, hide X/Y and show sizing/order */
   layoutContext?: "free" | "auto";
 }
 
 export default function CanvasPropertiesPanel({
   element, breakpoint, onStyleChange, onContentChange, layout, onLayoutChange,
-  layoutContext = "free",
+  layoutContext = "free", onAddAutoLayout,
 }: CanvasPropertiesPanelProps) {
   const raw = (element.styles?.[breakpoint] ?? {}) as Record<string, string>;
   const g   = (p: string) => raw[p] ?? "";
@@ -166,7 +168,7 @@ export default function CanvasPropertiesPanel({
   const isFlex = g("display") === "flex" || (!g("display") && isCont);
   const isGrid = g("display") === "grid";
 
-  const [aspectLocked, setAspectLocked] = useState(false);
+  const aspectLocked = layout?.aspectLocked ?? false;
   const [fillVisible, setFillVisible]   = useState(true);
   const [fillOpacity, setFillOpacity]   = useState(100);
 
@@ -406,7 +408,7 @@ export default function CanvasPropertiesPanel({
                 onLayoutChange("width", n);
                 if (aspectLocked && layout.height > 0) onLayoutChange("height", Math.round(n * layout.height / layout.width));
               }} />
-              <button onClick={() => setAspectLocked(v => !v)} style={{ background: "none", border: "none", cursor: "pointer", color: aspectLocked ? BR : M, padding: 2, flexShrink: 0 }}>
+              <button onClick={() => onLayoutChange?.("aspectLocked", !aspectLocked)} title="Lock aspect ratio" style={{ background: "none", border: "none", cursor: "pointer", color: aspectLocked ? BR : M, padding: 2, flexShrink: 0 }}>
                 {aspectLocked ? <Lock size={13}/> : <Unlock size={13}/>}
               </button>
               <PrefixInput prefix="H" value={layout.height} onChange={v => {
@@ -421,6 +423,15 @@ export default function CanvasPropertiesPanel({
         {/* Container options */}
         {isCont && (
           <>
+            {!isFlex && element.children.length > 0 && onAddAutoLayout && (
+              <button onClick={onAddAutoLayout} style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                width: "100%", height: 30, borderRadius: 7, border: `1px dashed ${BR}`,
+                background: "transparent", color: BR, fontSize: 11, fontWeight: 700, cursor: "pointer",
+              }}>
+                + Add Auto Layout
+              </button>
+            )}
             <div>
               <Label>Display</Label>
               <div style={{ display: "flex", gap: 2, background: BG, borderRadius: 7, padding: 3, border: `1px solid ${BDR}`, marginTop: 5 }}>

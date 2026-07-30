@@ -978,7 +978,7 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
         const currentPage = project.pages?.find((p: { id: string }) => p.id === selectedId);
         const pageName = currentPage?.name ?? "";
         const matched = frames.find(f => f.name.toLowerCase().trim() === pageName.toLowerCase().trim()) ?? frames[0];
-        elementsToSave = frameToElements(matched.children, matched.width);
+        elementsToSave = frameToElements(matched);
       }
 
       // Save page (blocks + elements)
@@ -1069,7 +1069,7 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
 
   // Convert a frame's design to page.elements[] and save immediately
   const publishFrameToPage = useCallback(async (frame: Frame) => {
-    const clean = frameToElements(frame.children, frame.width);
+    const clean = frameToElements(frame);
     setElements(clean);
     setSaved(false);
     // Trigger save right away so the published site is updated without extra clicks
@@ -1432,6 +1432,38 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
     setSwapTarget(null);
     toast.success(`Swapped to "${comp.name}"${keptTexts ? ` — ${keptTexts} text edit${keptTexts > 1 ? "s" : ""} kept` : ""}`);
   }, [deepCloneWithNewIds]);
+
+  // ── Update master from an instance, then push the change to every sibling ──
+  // (Phase 4 — a bounded, explicit propagation step. NOT continuous override
+  // resolution: instances are still copies, not live references. Going further
+  // would require every tree-walking site in the app — renderer, exporter, AI
+  // context, layers panels, promotions — to become instance-aware, which isn't
+  // something to improvise without being able to click-test each site.)
+  const handleUpdateMaster = useCallback((instanceEl: ElementNode) => {
+    const comp = components.find((c) => c.id === instanceEl.componentId);
+    if (!comp) return;
+    if (!confirm(`Update "${comp.name}" from this instance and push the change to every other instance? Their own position and size are kept; content and structure are replaced.`)) return;
+
+    const { layout: _layout, componentId: _cid, ...masterShape } = instanceEl;
+    const newRoot: ElementNode = JSON.parse(JSON.stringify(masterShape));
+    setComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, rootElement: newRoot } : c)));
+
+    let updated = 0;
+    setElements((prev) => prev.map((el) => {
+      if (el.id === instanceEl.id || el.componentId !== comp.id) return el;
+      updated++;
+      const fresh = deepCloneWithNewIds([JSON.parse(JSON.stringify(newRoot))])[0];
+      const base = el.layout ?? fresh.layout;
+      return {
+        ...fresh,
+        componentId: comp.id,
+        label: comp.name,
+        layout: { x: base?.x ?? 60, y: base?.y ?? 60, width: base?.width ?? 300, height: base?.height ?? 120 },
+      };
+    }));
+    setSaved(false);
+    toast.success(`Master updated${updated ? ` — pushed to ${updated} other instance${updated > 1 ? "s" : ""}` : ""}`);
+  }, [components, deepCloneWithNewIds]);
 
   // ── AI rewrite — 3 copy variants for a text field (Round 5 Ch 5.2) ───────────
   const handleRewrite = async (text: string, tone: string): Promise<string[]> => {
@@ -3462,6 +3494,7 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
                 onRegisterPaste={fn => { internalPasteRef.current = fn; }}
                 onCreateComponent={handleCreateComponent}
                 onSwapComponent={(el) => setSwapTarget(el)}
+                onUpdateMaster={handleUpdateMaster}
               />
           ) : (
             <div className="flex-1 overflow-y-auto p-8 bg-[#F3F4F6] custom-scrollbar flex flex-col items-center">
@@ -3626,6 +3659,7 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
                     y: Math.round(el.layout?.y ?? 0),
                     width: Math.round(el.layout?.width ?? 200),
                     height: Math.round(el.layout?.height ?? 60),
+                    aspectLocked: !!el.layout?.aspectLocked,
                   }}
                   onLayoutChange={(field, num) => {
                     const layout = el.layout ?? { x: 0, y: 0, width: 400, height: 120 };
@@ -3661,6 +3695,43 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
                     }
                     setSaved(false);
                   }}
+                  onAddAutoLayout={el.children.length > 0 ? () => {
+                    const num = (v: unknown) => parseFloat(String(v ?? 0)) || 0;
+                    const pos = el.children.map((c) => ({ l: num(c.styles?.desktop?.left), t: num(c.styles?.desktop?.top) }));
+                    const spreadX = Math.max(...pos.map((p) => p.l)) - Math.min(...pos.map((p) => p.l));
+                    const spreadY = Math.max(...pos.map((p) => p.t)) - Math.min(...pos.map((p) => p.t));
+                    const dir: "row" | "column" = spreadX >= spreadY ? "row" : "column";
+                    const sorted = [...el.children].sort((a, b) =>
+                      dir === "row" ? num(a.styles?.desktop?.left) - num(b.styles?.desktop?.left)
+                                    : num(a.styles?.desktop?.top) - num(b.styles?.desktop?.top)
+                    );
+                    const children = sorted.map((c) => {
+                      const d = { ...(c.styles?.desktop ?? {}) } as Record<string, string | number | undefined>;
+                      delete d.position; delete d.left; delete d.top;
+                      return { ...c, styles: { ...c.styles, desktop: d as ElementNode["styles"]["desktop"] } };
+                    });
+                    const updated: ElementNode = {
+                      ...el,
+                      children,
+                      styles: {
+                        ...el.styles,
+                        desktop: {
+                          ...el.styles.desktop,
+                          display: "flex",
+                          flexDirection: dir,
+                          gap: el.styles.desktop.gap ?? "16px",
+                          padding: el.styles.desktop.padding ?? "16px",
+                          alignItems: el.styles.desktop.alignItems ?? "flex-start",
+                        },
+                      },
+                    };
+                    if (isFrameEl && activeFrame) {
+                      handleUpdateFrameChildren(activeFrame.id, activeFrame.children.map(c => c.id === el.id ? updated : c));
+                    } else {
+                      setElements(prev => prev.map(c => c.id === el.id ? updated : c));
+                    }
+                    setSaved(false);
+                  } : undefined}
                 />
               ) : activeFrame ? (
                 /* ── Frame selected (no child element) — Figma-style panel ── */

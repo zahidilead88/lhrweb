@@ -84,6 +84,8 @@ export interface FreeCanvasProps {
   onCreateComponent?: (el: ElementNode) => void;
   // Round 1 R-12b — open the swap-component picker for an instance
   onSwapComponent?: (el: ElementNode) => void;
+  // Round 1 §6.3 — update the master from this instance, push to every sibling instance
+  onUpdateMaster?: (el: ElementNode) => void;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -293,7 +295,7 @@ export default function FreeCanvas({
   onViewportChange, frameChildren, onAddFrame,
   tool, onToolChange,
   saved, saving, onSave, onNewFrame,
-  onRegisterPaste, onCreateComponent, onSwapComponent,
+  onRegisterPaste, onCreateComponent, onSwapComponent, onUpdateMaster,
 }: FreeCanvasProps) {
 
   // ── View state
@@ -368,6 +370,8 @@ export default function FreeCanvas({
   const snapshotsRef  = useRef<ElementNode[][]>([]);
   const clipboardRef  = useRef<ElementNode[]>([]);
   const altDragRef    = useRef<{ id: string; x: number; y: number } | null>(null);
+  // Figma: Alt+click cycles through overlapping elements at the same point, top→bottom
+  const altCycleRef   = useRef<{ x: number; y: number; index: number } | null>(null);
 
   // Figma-style multi-drag: dragging one selected element moves the whole selection
   const multiDragRef  = useRef<{ leadId: string; startX: number; startY: number; bases: Map<string, { x: number; y: number }> } | null>(null);
@@ -443,15 +447,26 @@ export default function FreeCanvas({
   }, [selectionBounds]);
 
   // ── History ───────────────────────────────────────────────────────────────
+  const futureRef = useRef<ElementNode[][]>([]);
+
   const saveSnapshot = useCallback(() => {
     snapshotsRef.current = [...snapshotsRef.current.slice(-49), JSON.parse(JSON.stringify(elements))];
+    futureRef.current = []; // a new action invalidates the redo stack
   }, [elements]);
 
   const undo = useCallback(() => {
     if (!snapshotsRef.current.length) return;
     const prev = snapshotsRef.current.pop()!;
+    futureRef.current = [...futureRef.current.slice(-49), JSON.parse(JSON.stringify(elements))];
     onElementsChange?.(prev);
-  }, [onElementsChange]);
+  }, [elements, onElementsChange]);
+
+  const redo = useCallback(() => {
+    if (!futureRef.current.length) return;
+    const next = futureRef.current.pop()!;
+    snapshotsRef.current = [...snapshotsRef.current, JSON.parse(JSON.stringify(elements))];
+    onElementsChange?.(next);
+  }, [elements, onElementsChange]);
 
   // ── Clipboard ─────────────────────────────────────────────────────────────
   const copy = useCallback(() => {
@@ -807,6 +822,7 @@ export default function FreeCanvas({
         if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === "l" || e.key === "L")) { e.preventDefault(); toggleLock(); return; }
         if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === "h" || e.key === "H")) { e.preventDefault(); toggleHide(); return; }
         if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); return; }
+        if ((e.metaKey || e.ctrlKey) && ((e.key === "z" && e.shiftKey) || e.key === "y")) { e.preventDefault(); redo(); return; }
 
         if (e.key === "]" && !e.shiftKey && selectedId) reorder(selectedId, "forward");
         if (e.key === "[" && !e.shiftKey && selectedId) reorder(selectedId, "backward");
@@ -840,7 +856,7 @@ export default function FreeCanvas({
     return () => { window.removeEventListener("keydown", onDown); window.removeEventListener("keyup", onUp); };
   }, [elements, frames, allSelected, selectedId, tool, editingId,
       onDeselect, onSelect, onLayoutChange, onElementsChange,
-      deleteSelected, duplicate, copy, paste, pasteInPlace, undo, reorder, fitToScreen,
+      deleteSelected, duplicate, copy, paste, pasteInPlace, undo, redo, reorder, fitToScreen,
       toggleLock, toggleHide, groupSelected, ungroupSelected, zoomToSelection, autoLayoutSelected, onCreateComponent]);
 
   // ── Wheel zoom ────────────────────────────────────────────────────────────
@@ -921,7 +937,19 @@ export default function FreeCanvas({
     if (drawStartRef.current) {
       const { x: ex, y: ey } = screenToCanvas(e.clientX, e.clientY);
       const { cx: sx, cy: sy } = drawStartRef.current;
-      setDrawShape({ x: Math.min(sx, ex), y: Math.min(sy, ey), w: Math.abs(ex - sx), h: Math.abs(ey - sy) });
+      let dx = ex - sx, dy = ey - sy;
+      if (e.shiftKey) {
+        // Figma: constrain to a square/circle using the larger delta
+        const s = Math.max(Math.abs(dx), Math.abs(dy));
+        dx = (dx < 0 ? -1 : 1) * s;
+        dy = (dy < 0 ? -1 : 1) * s;
+      }
+      if (e.altKey) {
+        // Figma: draw outward from the center instead of from the corner
+        setDrawShape({ x: sx - Math.abs(dx), y: sy - Math.abs(dy), w: Math.abs(dx) * 2, h: Math.abs(dy) * 2 });
+      } else {
+        setDrawShape({ x: Math.min(sx, sx + dx), y: Math.min(sy, sy + dy), w: Math.abs(dx), h: Math.abs(dy) });
+      }
     }
   }, [screenToCanvas]);
 
@@ -1072,6 +1100,7 @@ export default function FreeCanvas({
         const el = id ? elements.find((e) => e.id === id) : null;
         if (!el?.componentId || allSelected.size !== 1) return [];
         return [
+          { label: "Update Master + Push to Instances", disabled: !onUpdateMaster, action: () => onUpdateMaster?.(el) },
           { label: "Swap Component…", disabled: !onSwapComponent, action: () => onSwapComponent?.(el) },
           { label: "Detach Component", action: detachSelected },
         ];
@@ -1137,6 +1166,25 @@ export default function FreeCanvas({
             {/* Transform — infinite canvas world space */}
             <div
               style={{ position: "absolute", transformOrigin: "0 0", transform: `translate(${offset.x}px,${offset.y}px) scale(${scale})` }}
+              onClickCapture={e => {
+                // Figma: Alt+click cycles through overlapping elements top→bottom.
+                // Runs after the topmost element's own onMouseDown already selected it
+                // normally — this only overrides that pick when cycling applies. Uses
+                // "click" (not mousedown) so a genuine Alt+drag-duplicate is unaffected.
+                if (!e.altKey || tool !== "move") return;
+                const { x, y } = screenToCanvas(e.clientX, e.clientY);
+                const hits = elements
+                  .map((el, i) => ({ el, l: getLayout(el, i), i }))
+                  .filter(({ el, l }) => !el.hidden && !el.locked && x >= l.x && x <= l.x + l.w && y >= l.y && y <= l.y + l.h)
+                  .sort((a, b) => (b.el.layout?.zIndex ?? b.i) - (a.el.layout?.zIndex ?? a.i)); // topmost first
+                if (!hits.length) return;
+                e.preventDefault(); e.stopPropagation();
+                const prev = altCycleRef.current;
+                const samePoint = prev && Math.abs(prev.x - x) < 4 / scale && Math.abs(prev.y - y) < 4 / scale;
+                const index = samePoint ? (prev!.index + 1) % hits.length : 0;
+                altCycleRef.current = { x, y, index };
+                onSelect(hits[index].el.id, (e as unknown as MouseEvent).shiftKey);
+              }}
               onMouseDown={handleArtboardMouseDown}
               onMouseMove={e => {
                 if (tool === "pen") {
@@ -1185,7 +1233,7 @@ export default function FreeCanvas({
                       scale={scale}
                       style={{ zIndex: sel ? 1000 : (el.layout?.zIndex ?? idx + 1), cursor: el.locked ? "not-allowed" : sel ? "move" : "pointer", opacity: el.locked ? 0.6 : 1 }}
                       enableResizing={sel && !el.locked && allSelected.size === 1 && (tool === "move" || tool === "scale")}
-                      lockAspectRatio={tool === "scale" || shiftHeld}
+                      lockAspectRatio={tool === "scale" || shiftHeld || !!el.layout?.aspectLocked}
                       disableDragging={el.locked || (tool !== "move" && tool !== "scale")}
                       handleStyles={elHandleStyles}
                       onMouseDown={e => {

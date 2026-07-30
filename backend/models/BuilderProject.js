@@ -86,6 +86,9 @@ const builderProjectSchema = new mongoose.Schema(
     package:              { type: String, enum: ["starter", "pro"] },
     pages:                { type: [pageSchema], default: [] },
     generatedAt:          { type: Date },
+    // Part 6 — feature flags for the commerce/CMS layers
+    ecommerceEnabled: { type: Boolean, default: false },
+    cmsEnabled:       { type: Boolean, default: false },
     // Phase 4 — reusable components (Round 2 Ch 3: masters live at project level)
     components: {
       type: [

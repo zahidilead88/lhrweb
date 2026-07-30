@@ -1,4 +1,4 @@
-import type { ElementNode } from "@/types/builder";
+import type { ElementNode, Frame } from "@/types/builder";
 
 /**
  * Convert a frame's children (which carry layout.x/y/width/height for the free canvas)
@@ -10,9 +10,42 @@ import type { ElementNode } from "@/types/builder";
  *   flow mode and the published site don't want random absolute children)
  * - If `width` is a px value equal to frameWidth, replace with "100%" (full-width element)
  * - Never mutate input
+ *
+ * When `frame.layoutMode !== "none"` the frame's Auto Layout config (direction, gap,
+ * padding, alignment) is carried into the publish output as a single flex/grid wrapper —
+ * matching what FrameContent.tsx already renders in the editor — instead of silently
+ * discarding it in favor of plain document-order stacking.
  */
-export function frameToElements(children: ElementNode[], frameWidth?: number): ElementNode[] {
-  return children.map(el => cleanNode(el, frameWidth));
+export function frameToElements(children: ElementNode[], frameWidth?: number): ElementNode[];
+export function frameToElements(frame: Frame): ElementNode[];
+export function frameToElements(childrenOrFrame: ElementNode[] | Frame, frameWidth?: number): ElementNode[] {
+  if (Array.isArray(childrenOrFrame)) {
+    return childrenOrFrame.map(el => cleanNode(el, frameWidth));
+  }
+  const frame = childrenOrFrame;
+  const cleaned = frame.children.map(el => cleanNode(el, frame.width));
+  if (!frame.layoutMode || frame.layoutMode === "none") return cleaned;
+
+  const wrapper: ElementNode = {
+    id: `el-al-${frame.id.slice(-8)}`,
+    tag: "div",
+    label: frame.name,
+    styles: {
+      desktop: {
+        display: frame.layoutMode === "grid" ? "grid" : "flex",
+        flexDirection: frame.layoutMode === "vertical" ? "column" : frame.layoutMode === "horizontal" ? "row" : undefined,
+        flexWrap: "wrap",
+        gap: `${frame.gap ?? 0}px`,
+        padding: `${frame.paddingTop ?? 0}px ${frame.paddingRight ?? 0}px ${frame.paddingBottom ?? 0}px ${frame.paddingLeft ?? 0}px`,
+        justifyContent: frame.justifyContent,
+        alignItems: frame.alignItems,
+        gridTemplateColumns: frame.layoutMode === "grid" ? `repeat(${frame.gridColumns ?? 3}, 1fr)` : undefined,
+        width: "100%",
+      },
+    },
+    children: cleaned,
+  };
+  return [wrapper];
 }
 
 function cleanNode(el: ElementNode, frameWidth?: number): ElementNode {
