@@ -51,7 +51,7 @@ function RotationHandle({
         const newTransform = deg === 0 ? withoutRotate : `${withoutRotate} rotate(${deg}deg)`.trim();
         return {
           ...el,
-          styles: { ...el.styles, desktop: { ...el.styles.desktop, transform: newTransform || undefined } },
+          styles: { ...el.styles, desktop: { ...el.styles?.desktop, transform: newTransform || undefined } },
         };
       }));
     };
@@ -133,6 +133,12 @@ export interface FrameContentProps {
   alignItems?: "flex-start" | "center" | "flex-end" | "stretch" | "baseline";
   // Grid
   gridColumns?: number;
+  gridRows?: number;
+  // horizontal/vertical only
+  flexWrap?: "wrap" | "nowrap";
+  // Phase 6 (bounded "Responsive Frames") — which breakpoint's style overrides
+  // to preview live on the canvas; defaults to "desktop" for backward compat.
+  breakpoint?: "desktop" | "tablet" | "mobile";
   onSelect: (id: string, multi: boolean) => void;
   onDeselect: () => void;
   onSelectAll: () => void;
@@ -157,7 +163,8 @@ export default function FrameContent({
   layoutMode = "none", gap = 0,
   paddingTop = 0, paddingRight = 0, paddingBottom = 0, paddingLeft = 0,
   justifyContent, alignItems,
-  gridColumns = 3,
+  gridColumns = 3, gridRows = 0, flexWrap = "wrap",
+  breakpoint = "desktop",
   onSelect, onDeselect, onSelectAll,
   onLayoutChange, onElementsChange, onUpdateContent,
   onDeleteSelected, onNudge,
@@ -224,7 +231,7 @@ export default function FrameContent({
         styles: {
           ...el.styles,
           desktop: {
-            ...el.styles.desktop,
+            ...el.styles?.desktop,
             position: "absolute" as const,
             left:  `${Math.round(l.x - minX)}px`,
             top:   `${Math.round(l.y - minY)}px`,
@@ -311,12 +318,12 @@ export default function FrameContent({
         styles: {
           ...el.styles,
           desktop: {
-            ...el.styles.desktop,
+            ...el.styles?.desktop,
             display: "flex",
             flexDirection: dir,
-            gap: el.styles.desktop.gap ?? "16px",
-            padding: el.styles.desktop.padding ?? "16px",
-            alignItems: el.styles.desktop.alignItems ?? "flex-start",
+            gap: el.styles?.desktop.gap ?? "16px",
+            padding: el.styles?.desktop.padding ?? "16px",
+            alignItems: el.styles?.desktop.alignItems ?? "flex-start",
           },
         },
       };
@@ -450,13 +457,14 @@ export default function FrameContent({
           position: "absolute", inset: 0,
           display: layoutMode === "grid" ? "grid" : "flex",
           flexDirection: layoutMode === "vertical" ? "column" : layoutMode === "horizontal" ? "row" : undefined,
-          flexWrap: "wrap",
+          flexWrap: layoutMode === "grid" ? undefined : flexWrap,
           gap: gap ?? 0,
           padding: `${paddingTop}px ${paddingRight}px ${paddingBottom}px ${paddingLeft}px`,
           justifyContent: justifyContent,
           alignItems: alignItems,
           alignContent: alignItems,
           gridTemplateColumns: layoutMode === "grid" ? `repeat(${gridColumns ?? 3}, 1fr)` : undefined,
+          gridTemplateRows: layoutMode === "grid" && gridRows ? `repeat(${gridRows}, 1fr)` : undefined,
           boxSizing: "border-box",
           overflow: "hidden auto",
         }}
@@ -476,7 +484,7 @@ export default function FrameContent({
                 ...elStyle(el),
               }}
             >
-              <FreeElement element={el} />
+              <FreeElement element={el} breakpoint={breakpoint} />
             </div>
           );
         })}
@@ -612,7 +620,7 @@ export default function FrameContent({
                 height: el.layout?.heightMode === "hug" ? "fit-content" : el.layout?.heightMode === "fill" ? "100%" : undefined,
                 minWidth: 0, minHeight: 0,
               }}>
-                <FreeElement element={el} />
+                <FreeElement element={el} breakpoint={breakpoint} />
                 {el.attrs?.["data-arrow"] === "true" && (
                   <svg style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", width: 10, height: 10 }} viewBox="0 0 10 10">
                     <polygon points="0,0 10,5 0,10" fill={el.styles?.desktop?.backgroundColor || "#000000"} />

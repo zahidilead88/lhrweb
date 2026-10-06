@@ -173,6 +173,52 @@ function NumInput({
   );
 }
 
+// 3x3 Figma-style alignment grid for a horizontal/vertical auto-layout Frame.
+// Row/col each mean "start/center/end" visually; which axis is justify vs.
+// align depends on layoutMode (main axis = layoutMode's direction).
+function AlignGrid9({ layoutMode, justifyContent, alignItems, onChange }: {
+  layoutMode: "horizontal" | "vertical";
+  justifyContent: NonNullable<Frame["justifyContent"]>;
+  alignItems: NonNullable<Frame["alignItems"]>;
+  onChange: (justify: NonNullable<Frame["justifyContent"]>, align: NonNullable<Frame["alignItems"]>) => void;
+}) {
+  const posToJustify = ["flex-start", "center", "flex-end"] as const;
+  const posToAlign = ["flex-start", "center", "flex-end"] as const;
+  const justifyToPos = (j: string) => Math.max(0, posToJustify.indexOf(j as (typeof posToJustify)[number]));
+  const alignToPos   = (a: string) => Math.max(0, posToAlign.indexOf(a as (typeof posToAlign)[number]));
+
+  // For horizontal auto layout: columns = justify (main axis), rows = align (cross axis).
+  // For vertical: rows = justify (main axis), columns = align (cross axis).
+  const activeCol = layoutMode === "horizontal" ? justifyToPos(justifyContent) : alignToPos(alignItems);
+  const activeRow = layoutMode === "horizontal" ? alignToPos(alignItems) : justifyToPos(justifyContent);
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 3, width: 72, padding: 4, background: "#f5f5f7", borderRadius: 6, border: "1px solid #e8e8ec" }}>
+      {Array.from({ length: 9 }, (_, i) => {
+        const row = Math.floor(i / 3), col = i % 3;
+        const active = row === activeRow && col === activeCol;
+        return (
+          <button
+            key={i}
+            onClick={() => {
+              const justify = layoutMode === "horizontal" ? posToJustify[col] : posToJustify[row];
+              const align   = layoutMode === "horizontal" ? posToAlign[row]   : posToAlign[col];
+              onChange(justify, align);
+            }}
+            style={{
+              width: 18, height: 18, borderRadius: 3, border: "none", cursor: "pointer",
+              background: active ? BRAND : "#e2e2e8", padding: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <span style={{ width: active ? 7 : 4, height: active ? 7 : 4, borderRadius: 2, background: active ? "#fff" : "rgba(0,0,0,0.28)" }} />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function defaultEffect(): FrameEffect {
   return { visible: true, type: "drop-shadow", x: 2, y: 4, blur: 12, spread: 0, color: "rgba(0,0,0,0.15)" };
 }
@@ -294,60 +340,98 @@ export default function FramePropertiesPanel({ frame, onChange }: FramePropertie
         {/* Auto-layout sub-controls */}
         {layoutMode !== "none" && (
           <>
-            {/* Grid columns */}
+            {/* Grid columns / rows */}
             {layoutMode === "grid" && (
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Columns</div>
-                <NumInput value={frame.gridColumns ?? 3} min={1} max={12} onChange={v => set("gridColumns", Math.round(v))} />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Columns</div>
+                  <NumInput value={frame.gridColumns ?? 3} min={1} max={12} onChange={v => set("gridColumns", Math.round(v))} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Rows</div>
+                  <NumInput value={frame.gridRows ?? 0} min={0} max={12} onChange={v => set("gridRows", Math.round(v))} />
+                </div>
               </div>
             )}
 
-            {/* Gap */}
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Gap</div>
-              <NumInput value={gap} unit="px" min={0} onChange={v => set("gap", Math.round(v))} />
+            {/* Gap + wrap (horizontal/vertical only — grid wraps by definition) */}
+            <div style={{ display: layoutMode === "grid" ? "block" : "grid", gridTemplateColumns: "1fr auto", gap: 6, marginBottom: 8, alignItems: "end" }}>
+              <div>
+                <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Gap</div>
+                <NumInput value={gap} unit="px" min={0} onChange={v => set("gap", Math.round(v))} />
+              </div>
+              {layoutMode !== "grid" && (
+                <button
+                  onClick={() => set("flexWrap", (frame.flexWrap ?? "wrap") === "wrap" ? "nowrap" : "wrap")}
+                  title="Toggle whether children wrap to a new line"
+                  style={{
+                    height: 26, padding: "0 8px", display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                    border: `1px solid ${(frame.flexWrap ?? "wrap") === "wrap" ? BRAND : "#e8e8ec"}`,
+                    borderRadius: 6, cursor: "pointer",
+                    background: (frame.flexWrap ?? "wrap") === "wrap" ? "rgba(123,110,245,0.1)" : "#f5f5f7",
+                    color: (frame.flexWrap ?? "wrap") === "wrap" ? BRAND : "rgba(0,0,0,0.45)",
+                    fontSize: 9, fontWeight: 700, whiteSpace: "nowrap",
+                  }}
+                >
+                  Wrap
+                </button>
+              )}
             </div>
 
-            {/* Justify / Align — side by side */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
-              <div>
-                <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Justify</div>
-                <select
-                  value={frame.justifyContent ?? "flex-start"}
-                  onChange={e => set("justifyContent", e.target.value as Frame["justifyContent"])}
-                  style={{
-                    width: "100%", padding: "4px 6px", borderRadius: 6,
-                    border: "1px solid #e8e8ec", background: "#f5f5f7",
-                    fontSize: 10, outline: "none", color: "rgba(0,0,0,0.6)",
-                  }}
-                >
-                  <option value="flex-start">Start</option>
-                  <option value="center">Center</option>
-                  <option value="flex-end">End</option>
-                  <option value="space-between">Space between</option>
-                  <option value="space-around">Space around</option>
-                  <option value="space-evenly">Space evenly</option>
-                </select>
+            {/* Alignment — a 9-cell grid for horizontal/vertical auto layout (Figma-style);
+                grid mode keeps the two plain selects since justify-items/align-items on a
+                CSS grid don't map to the same "one shared point" mental model. */}
+            {layoutMode !== "grid" ? (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Alignment</div>
+                <AlignGrid9
+                  layoutMode={layoutMode}
+                  justifyContent={frame.justifyContent ?? "flex-start"}
+                  alignItems={frame.alignItems ?? "flex-start"}
+                  onChange={(justify, align) => { set("justifyContent", justify); set("alignItems", align); }}
+                />
               </div>
-              <div>
-                <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Align</div>
-                <select
-                  value={frame.alignItems ?? "flex-start"}
-                  onChange={e => set("alignItems", e.target.value as Frame["alignItems"])}
-                  style={{
-                    width: "100%", padding: "4px 6px", borderRadius: 6,
-                    border: "1px solid #e8e8ec", background: "#f5f5f7",
-                    fontSize: 10, outline: "none", color: "rgba(0,0,0,0.6)",
-                  }}
-                >
-                  <option value="flex-start">Start</option>
-                  <option value="center">Center</option>
-                  <option value="flex-end">End</option>
-                  <option value="stretch">Stretch</option>
-                  <option value="baseline">Baseline</option>
-                </select>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Justify</div>
+                  <select
+                    value={frame.justifyContent ?? "flex-start"}
+                    onChange={e => set("justifyContent", e.target.value as Frame["justifyContent"])}
+                    style={{
+                      width: "100%", padding: "4px 6px", borderRadius: 6,
+                      border: "1px solid #e8e8ec", background: "#f5f5f7",
+                      fontSize: 10, outline: "none", color: "rgba(0,0,0,0.6)",
+                    }}
+                  >
+                    <option value="flex-start">Start</option>
+                    <option value="center">Center</option>
+                    <option value="flex-end">End</option>
+                    <option value="space-between">Space between</option>
+                    <option value="space-around">Space around</option>
+                    <option value="space-evenly">Space evenly</option>
+                  </select>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: "rgba(0,0,0,0.38)", marginBottom: 3 }}>Align</div>
+                  <select
+                    value={frame.alignItems ?? "flex-start"}
+                    onChange={e => set("alignItems", e.target.value as Frame["alignItems"])}
+                    style={{
+                      width: "100%", padding: "4px 6px", borderRadius: 6,
+                      border: "1px solid #e8e8ec", background: "#f5f5f7",
+                      fontSize: 10, outline: "none", color: "rgba(0,0,0,0.6)",
+                    }}
+                  >
+                    <option value="flex-start">Start</option>
+                    <option value="center">Center</option>
+                    <option value="flex-end">End</option>
+                    <option value="stretch">Stretch</option>
+                    <option value="baseline">Baseline</option>
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Padding 4-input grid */}
             <div style={{ marginBottom: 8 }}>

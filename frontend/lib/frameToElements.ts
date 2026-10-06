@@ -34,12 +34,13 @@ export function frameToElements(childrenOrFrame: ElementNode[] | Frame, frameWid
       desktop: {
         display: frame.layoutMode === "grid" ? "grid" : "flex",
         flexDirection: frame.layoutMode === "vertical" ? "column" : frame.layoutMode === "horizontal" ? "row" : undefined,
-        flexWrap: "wrap",
+        flexWrap: frame.layoutMode === "grid" ? undefined : (frame.flexWrap ?? "wrap"),
         gap: `${frame.gap ?? 0}px`,
         padding: `${frame.paddingTop ?? 0}px ${frame.paddingRight ?? 0}px ${frame.paddingBottom ?? 0}px ${frame.paddingLeft ?? 0}px`,
         justifyContent: frame.justifyContent,
         alignItems: frame.alignItems,
         gridTemplateColumns: frame.layoutMode === "grid" ? `repeat(${frame.gridColumns ?? 3}, 1fr)` : undefined,
+        gridTemplateRows: frame.layoutMode === "grid" && frame.gridRows ? `repeat(${frame.gridRows}, 1fr)` : undefined,
         width: "100%",
       },
     },
@@ -77,5 +78,38 @@ function cleanNode(el: ElementNode, frameWidth?: number): ElementNode {
       desktop,
     },
     children: el.children.map(child => cleanNode(child, frameWidth)),
+  };
+}
+
+/**
+ * The reverse of `frameToElements`: best-effort, one-shot conversion of a
+ * page's Flow-mode elements into a Free-canvas Frame, so switching into Free
+ * mode can bring the section you were just editing along with it instead of
+ * landing on an unrelated or empty canvas. Not a live sync — a snapshot
+ * taken once, the same lossy-but-useful spirit as the existing Free→Flow
+ * direction (Flow has no real pixel layout to preserve, so children are
+ * simply stacked top-to-bottom, full width, each given a generous default
+ * height children can grow past — same convention the "+" quick-add button
+ * already uses for a brand new element).
+ */
+export function elementsToFrame(name: string, elements: ElementNode[], frameWidth = 1440): Frame {
+  const DEFAULT_CHILD_HEIGHT = 160;
+  const GAP = 24;
+  let y = GAP;
+  const children = elements.map((el) => {
+    const placed: ElementNode = { ...el, layout: { x: 0, y, width: frameWidth, height: DEFAULT_CHILD_HEIGHT } };
+    y += DEFAULT_CHILD_HEIGHT + GAP;
+    return placed;
+  });
+  return {
+    id: `frame-${crypto.randomUUID().slice(0, 8)}`,
+    name,
+    canvasX: 0,
+    canvasY: 0,
+    width: frameWidth,
+    height: Math.max(900, y),
+    background: "#ffffff",
+    clipContent: true,
+    children,
   };
 }

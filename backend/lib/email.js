@@ -93,9 +93,27 @@ async function sendPasswordResetEmail(to, resetUrl) {
   });
 }
 
+async function sendFormSubmissionEmail(to, { businessName, formId, data }) {
+  const rows = Object.entries(data || {})
+    .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:13px">${k}</td><td style="padding:4px 0;font-size:13px">${String(v ?? "")}</td></tr>`)
+    .join("");
+  await send({
+    to,
+    subject: `New form submission — ${businessName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto">
+        <h2>New submission${formId ? ` (${formId})` : ""}</h2>
+        <p style="color:#6b7280;font-size:13px">From your site: <strong>${businessName}</strong></p>
+        <table style="border-collapse:collapse;margin-top:12px">${rows}</table>
+      </div>
+    `,
+  });
+}
+
 module.exports = {
   sendWelcomeEmail,
   sendPaymentConfirmation,
   sendCancelledEmail,
   sendPasswordResetEmail,
+  sendFormSubmissionEmail,
 };

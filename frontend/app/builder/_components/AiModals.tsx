@@ -9,6 +9,7 @@ export interface PageSeo {
   title?: string;
   description?: string;
   keywords?: string[];
+  ogImage?: string;
 }
 
 export interface AiTheme {
@@ -19,10 +20,10 @@ export interface AiTheme {
   };
 }
 
-const inputCls = "w-full px-3 py-2 text-[12px] text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6344d4]/10 focus:border-[#6344d4]/40 transition-all";
-const lblCls   = "block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5";
+export const inputCls = "w-full px-3 py-2 text-[12px] text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6344d4]/10 focus:border-[#6344d4]/40 transition-all";
+export const lblCls   = "block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5";
 
-function ModalShell({ title, icon, onClose, children }: {
+export function ModalShell({ title, icon, onClose, children }: {
   title: string; icon: React.ReactNode; onClose: () => void; children: React.ReactNode;
 }) {
   return (
@@ -97,6 +98,13 @@ export function SeoModal({ pageName, initial, onGenerate, onSave, onClose }: {
           <input className={inputCls} value={(seo.keywords || []).join(", ")}
             onChange={(e) => setSeo({ ...seo, keywords: e.target.value.split(",").map((k) => k.trim()).filter(Boolean) })}
             placeholder="web design lahore, custom websites" />
+        </div>
+
+        <div>
+          <label className={lblCls}>Social share image (OG image URL)</label>
+          <input className={inputCls} value={seo.ogImage || ""}
+            onChange={(e) => setSeo({ ...seo, ogImage: e.target.value })}
+            placeholder="https://…/preview.jpg — shown when this page is shared" />
         </div>
 
         <button

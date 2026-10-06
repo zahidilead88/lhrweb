@@ -10,7 +10,8 @@ import {
   ChevronDown, ChevronRight, ArrowUp, ArrowDown, Blocks, Bot,
   Columns2, Eye, X, GripVertical, Monitor, Tablet, Smartphone,
   Share2, Send, History, Layout, Layers, Code2, Globe, Pencil, Download, Palette, Bookmark,
-  Type, AlignLeft, Link2, List, Wand2, Search as SearchIcon,
+  Type, AlignLeft, Link2, List, Wand2, Search as SearchIcon, Database,
+  Package, CreditCard, GitBranch, Image as ImageIcon, Inbox, ShieldCheck, BarChart3,
 } from "lucide-react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
@@ -28,6 +29,23 @@ import BlockPreview from "./_components/BlockPreview";
 import BlockEditorPanel from "./_components/BlockEditorPanel";
 import ExportModal from "./_components/ExportModal";
 import { SeoModal, ThemeModal, type PageSeo, type AiTheme } from "./_components/AiModals";
+import { DomainModal } from "./_components/DomainModal";
+import CmsPanel from "./_components/CmsPanel";
+import { BindDataModal } from "./_components/BindDataModal";
+import { CmsListModal } from "./_components/CmsListModal";
+import { CmsTemplateModal } from "./_components/CmsTemplateModal";
+import ProductsPanel from "./_components/ProductsPanel";
+import { PaymentsModal } from "./_components/PaymentsModal";
+import { BindProductModal } from "./_components/BindProductModal";
+import { ProductListModal } from "./_components/ProductListModal";
+import { ProductTemplateModal } from "./_components/ProductTemplateModal";
+import SitePanel from "./_components/SitePanel";
+import { PageParentModal } from "./_components/PageParentModal";
+import AssetLibraryPanel, { AssetPickerModal } from "./_components/AssetLibraryPanel";
+import FormSubmissionsPanel from "./_components/FormSubmissionsPanel";
+import AuditPanel from "./_components/AuditPanel";
+import VersionHistoryPanel from "./_components/VersionHistoryPanel";
+import AnalyticsPanel from "./_components/AnalyticsPanel";
 import FreeCanvas from "./_components/FreeCanvas";
 import AddPanel, { createElement } from "./_components/AddPanel";
 import StylesPanel from "./_components/StylesPanel";
@@ -40,14 +58,18 @@ import { ColorSwatchButton } from "./_components/ColorPicker";
 import FramePropertiesPanel from "./_components/FramePropertiesPanel";
 import { parseFigmaClipboard, svgToElement, imageToElement } from "@/lib/parseFigmaClipboard";
 import { BLOCK_FIELDS, ITEM_FIELDS, ITEM_ARRAY_KEY, type ComponentDef, type BlockStyles } from "@/lib/builderComponents";
-import type { ElementNode, StyleClass, SiteTokens, FreeLayout, Frame, CanvasTool, SavedSection, ProjectComponent } from "@/types/builder";
+import type { ElementNode, StyleClass, SiteTokens, FreeLayout, Frame, FrameEffect, CanvasTool, SavedSection, ProjectComponent, ComponentVariant, CanvasGuide, CmsBinding, CmsCollection, CmsListQuery, CmsTemplate, Product, ProductBinding, ProductListQuery, ProductField, ProductTemplate } from "@/types/builder";
+import { mergeMasterIntoInstance, findEnclosingInstance, pathToKey } from "@/lib/componentInstances";
 import { FRAME_PRESETS } from "@/types/builder";
-import { frameToElements } from "@/lib/frameToElements";
+import { frameToElements, elementsToFrame } from "@/lib/frameToElements";
+import { useSelectionState } from "./hooks/useSelectionState";
+import { useCanvasModeState } from "./hooks/useCanvasModeState";
+import { useSaveOrchestration } from "./hooks/useSaveOrchestration";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Block   { id: string; type: string; content: Record<string, unknown>; styles?: BlockStyles; }
-interface Page    { id: string; name: string; slug: string; blocks: Block[]; elements?: ElementNode[]; classes?: StyleClass[]; tokens?: SiteTokens; seo?: PageSeo; }
+interface Page    { id: string; name: string; slug: string; parentId?: string; blocks: Block[]; elements?: ElementNode[]; classes?: StyleClass[]; tokens?: SiteTokens; seo?: PageSeo; cmsTemplate?: CmsTemplate; productTemplate?: ProductTemplate; }
 interface Project {
   _id: string; businessName: string; tagline: string;
   primaryColor: string; package: "starter" | "pro";
@@ -55,6 +77,7 @@ interface Project {
   classes?: StyleClass[]; tokens?: SiteTokens;
   canvasMode?: "flow" | "free";
   generatedAt?: string; updatedAt?: string;
+  slug?: string; customDomain?: string; customDomainVerified?: boolean;
 }
 
 type View = "loading" | "no-auth" | "choose" | "prompt" | "wizard" | "generating" | "manual-setup" | "editor";
@@ -169,12 +192,16 @@ function updateElementContent(elements: ElementNode[], id: string, content: stri
   return updateElementInTree(elements, id, (el) => ({ ...el, content }));
 }
 
-function updateElementStyle(elements: ElementNode[], id: string, breakpoint: "desktop" | "tablet" | "mobile", property: string, value: string): ElementNode[] {
+function updateElementAttrs(elements: ElementNode[], id: string, attr: string, value: string): ElementNode[] {
+  return updateElementInTree(elements, id, (el) => ({ ...el, attrs: { ...el.attrs, [attr]: value } }));
+}
+
+function updateElementStyle(elements: ElementNode[], id: string, breakpoint: "desktop" | "tablet" | "mobile", property: string, value: string | number | FrameEffect[]): ElementNode[] {
   return updateElementInTree(elements, id, (el) => ({
     ...el,
     styles: {
       ...el.styles,
-      [breakpoint]: { ...(el.styles[breakpoint] || {}), [property]: value || undefined },
+      [breakpoint]: { ...(el.styles?.[breakpoint] || {}), [property]: value || undefined },
     },
   }));
 }
@@ -490,55 +517,24 @@ function BuilderContent() {
   const [manualColor, setManualColor] = useState("#000000");
   const [initSaving, setInitSaving]   = useState(false);
 
-  // ── Crash Recovery (Ch 1.5) ──────────────────────────────────────────────────
-  const [showRecovery, setShowRecovery] = useState(false);
-  const [recoverySnapshot, setRecoverySnapshot] = useState<{ elements?: ElementNode[]; frames?: Frame[]; timestamp: number } | null>(null);
-
-  // ── Save Failure Recovery (ER-01, Ch 1.2) ────────────────────────────────────
-  const [saveFailed, setSaveFailed] = useState(false);
-  const [saveRetryCount, setSaveRetryCount] = useState(0);
-  const saveAbortRef = useRef<AbortController | null>(null);
-
   // ── Project Load Error (Ch 1.1) ──────────────────────────────────────────────
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // ── Recovery key prefix ──────────────────────────────────────────────────────
-  const recoveryKey = (pid?: string) => `lhrweb_recovery_${project?._id ?? pid ?? "unknown"}`;
-
-  // ── Write recovery snapshot to localStorage (on save failure) ────────────────
-  // Must be called with current elements/frames values (closure-safe via refs)
-  const elementsForRecovery = useRef<ElementNode[]>([]);
-  const framesForRecovery = useRef<Frame[]>([]);
-  const writeRecoverySnapshot = useCallback((els?: ElementNode[], frs?: Frame[]) => {
-    try {
-      const snapshot = {
-        elements: els ?? elementsForRecovery.current,
-        frames: frs ?? framesForRecovery.current,
-        timestamp: Date.now(),
-      };
-      const json = JSON.stringify(snapshot);
-      if (json.length > 4_000_000) return;
-      localStorage.setItem(recoveryKey(), json);
-    } catch { /* localStorage full or unavailable */ }
-  }, [recoveryKey]);
-
-  // ── Clear recovery snapshot (on successful save) ─────────────────────────────
-  const clearRecoverySnapshot = useCallback(() => {
-    try { localStorage.removeItem(recoveryKey()); } catch {}
-  }, [recoveryKey]);
-
-  // ── Check for recovery on editor load ────────────────────────────────────────
-  const checkRecovery = useCallback((projectId: string, updatedAt: string) => {
-    try {
-      const raw = localStorage.getItem(`lhrweb_recovery_${projectId}`);
-      if (!raw) return;
-      const snapshot = JSON.parse(raw);
-      if (snapshot.timestamp > new Date(updatedAt).getTime()) {
-        setRecoverySnapshot(snapshot);
-        setShowRecovery(true);
-      }
-    } catch { /* corrupt recovery data — ignore */ }
-  }, []);
+  // ── Save orchestration (Phase 0 — extracted, see hooks/useSaveOrchestration.ts) ─
+  const {
+    saving, setSaving,
+    saved, setSaved,
+    saveFailed, setSaveFailed,
+    saveRetryCount, setSaveRetryCount,
+    saveAbortRef,
+    showRecovery, setShowRecovery,
+    recoverySnapshot, setRecoverySnapshot,
+    elementsForRecovery, framesForRecovery,
+    recoveryKey,
+    writeRecoverySnapshot,
+    clearRecoverySnapshot,
+    checkRecovery,
+  } = useSaveOrchestration(project?._id);
 
   // ── Undo / Redo history ───────────────────────────────────────────────────────
   const [blocks, setBlocksRaw]  = useState<Block[]>([]);
@@ -594,8 +590,6 @@ function BuilderContent() {
 
   // ── Editor state ─────────────────────────────────────────────────────────────
   const [selectedId, setSelectedId]           = useState<string | null>(null);
-  const [saving, setSaving]                   = useState(false);
-  const [saved, setSaved]                     = useState(false);
   const [showExport, setShowExport]           = useState(false);
   const [addPanelTab, setAddPanelTab]         = useState<"elements" | "sections" | "ai">("elements");
   const [newPageName, setNewPageName]         = useState("");
@@ -603,11 +597,9 @@ function BuilderContent() {
   const [renamingPageId, setRenamingPageId]   = useState<string | null>(null);
   const [renameInput, setRenameInput]         = useState("");
   const [showPageDropdown, setShowPageDropdown] = useState(false);
-  const [previewMode, setPreviewMode]         = useState<"none" | "split" | "full">("none");
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
   const [activeDragId, setActiveDragId]       = useState<string | null>(null);
-  const [previewDevice, setPreviewDevice]     = useState<"desktop" | "mobile">("desktop");
-  const [activeTab, setActiveTab]             = useState<"ai" | "design" | "layers" | "styles" | "add" | "assets" | null>("ai");
+  const [activeTab, setActiveTab]             = useState<"ai" | "design" | "layers" | "styles" | "add" | "assets" | "cms" | "commerce" | "site" | "history" | "forms" | "audit" | "analytics" | null>("ai");
 
   const [panelDragType, setPanelDragType]         = useState<string | null>(null);
   const [saveModal, setSaveModal] = useState<{ type: "section" | "element"; data: Block | ElementNode } | null>(null);
@@ -616,23 +608,35 @@ function BuilderContent() {
   const dropResolveRef    = useRef<((r: { id: string | null; position: string }) => void) | null>(null);
   // V2 iframe canvas state
   const [elements, setElements]                   = useState<ElementNode[]>([]);
-  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  const [canvasViewport, setCanvasViewport]       = useState<"desktop" | "tablet" | "mobile">("desktop");
 const [classes, setClasses]                     = useState<StyleClass[]>([]);
   const [components, setComponents]               = useState<ProjectComponent[]>([]);
   const [tokens, setTokens]                       = useState<SiteTokens>({ colors: [], fonts: [], spacing: {} });
-  const [canvasMode, setCanvasModeState]          = useState<"flow" | "free">("flow");
-  const [freeSelectedIds, setFreeSelectedIds]     = useState<string[]>([]);
   // Phase 3 — Figma-like frames
   const [frames, setFrames]                       = useState<Frame[]>([]);
+  // Phase 1 — persistent ruler guides on the Free canvas
+  const [guides, setGuides]                       = useState<CanvasGuide[]>([]);
   elementsForRecovery.current = elements;
   framesForRecovery.current = frames;
-  const [selectedFrameId, setSelectedFrameId]     = useState<string | null>(null);
-  const [canvasZoom, setCanvasZoom]               = useState(0.75);
-  // Phase 4 — active canvas tool (lifted from FreeCanvas)
-  const [activeTool, setActiveTool]               = useState<CanvasTool>("move");
-  // Phase 5/6 — elements selected inside a frame (multi-select)
-  const [selectedFrameElementIds, setSelectedFrameElementIds] = useState<string[]>([]);
+
+  // ── Selection state (Phase 0 — extracted, see hooks/useSelectionState.ts) ───
+  const {
+    selectedElementId, setSelectedElementId,
+    selectedFrameId, setSelectedFrameId,
+    freeSelectedIds, setFreeSelectedIds,
+    selectedFrameElementIds, setSelectedFrameElementIds,
+    clearSelection,
+  } = useSelectionState();
+
+  // ── Canvas-mode state (Phase 0 — extracted, see hooks/useCanvasModeState.ts) ─
+  const {
+    canvasMode, setCanvasModeState,
+    canvasViewport, setCanvasViewport,
+    canvasZoom, setCanvasZoom,
+    activeTool, setActiveTool,
+    previewMode, setPreviewMode,
+    previewDevice, setPreviewDevice,
+  } = useCanvasModeState();
+
   // Phase 9 — saved sections + convert modal
   const [savedSections, setSavedSections] = useState<SavedSection[]>([]);
   const [convertingFrame, setConvertingFrame] = useState<Frame | null>(null);
@@ -851,6 +855,7 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
     setTokens({ colors: proj.tokens?.colors ?? [], fonts: proj.tokens?.fonts ?? [], spacing: proj.tokens?.spacing ?? {} });
     setCanvasModeState(proj.canvasMode ?? "flow");
     setFrames((proj as any).canvasState?.frames ?? []);
+    setGuides((proj as any).canvasState?.guides ?? []);
     setSavedSections((proj as any).savedSections ?? []);
     setSelectedFrameId(null);
     setFreeSelectedIds([]);
@@ -878,6 +883,23 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
     setSaved(false);
     setEditingBlockId(null);
   }, [resetBlocks, saved, selectedId]);
+
+  // Bring the current section along into Free mode automatically, instead of
+  // landing on an unrelated or empty canvas — Free canvas Frames are stored
+  // project-wide, with no built-in link back to whichever Flow page you were
+  // just on. Matches the existing name-matching convention `handleSave`
+  // already relies on for the reverse direction (Free → Flow) at save time.
+  // A one-shot snapshot, not a live sync: re-entering Free mode after this
+  // won't re-sync further edits from the Flow side into the same frame.
+  useEffect(() => {
+    if (canvasMode !== "free" || !project || !selectedId) return;
+    const page = project.pages.find((p) => p.id === selectedId);
+    if (!page || elements.length === 0) return;
+    const already = frames.some((f) => f.name.toLowerCase().trim() === page.name.toLowerCase().trim());
+    if (already) return;
+    setFrames((prev) => [...prev, elementsToFrame(page.name, elements)]);
+    setSaved(false);
+  }, [canvasMode, project, selectedId, elements, frames]);
 
   // ── AI generate (Round 5 Ch 5.1 — async job + status polling) ───────────────
   const generateSite = async (builtPrompt: string, theme: string): Promise<Project> => {
@@ -958,6 +980,14 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
   // ── Save page ────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!selectedId || saving || !project) return;
+
+    // Phase 7 §13 — publish history: snapshot what's currently live, before
+    // this save overwrites it. Best-effort and non-blocking — a failed
+    // snapshot must never delay or break the actual publish that follows.
+    fetch(`${API}/api/builder/project/version?projectId=${project._id}`, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    }).catch(() => {});
+
     setSaving(true);
     setSaveFailed(false);
     setSaveRetryCount(0);
@@ -1006,7 +1036,7 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
           method: "PUT", headers, signal, body: JSON.stringify({ tokens }),
         }),
         fetch(`${API}/api/builder/project/settings?${projectQ}`, {
-          method: "PUT", headers, signal, body: JSON.stringify({ canvasMode, canvasState: { frames } }),
+          method: "PUT", headers, signal, body: JSON.stringify({ canvasMode, canvasState: { frames, guides } }),
         }),
       ]);
 
@@ -1251,6 +1281,14 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
     setSaved(false);
   }, []);
 
+  const handleFrameChildAttrsChange = useCallback((frameId: string, elId: string, attr: string, value: string) => {
+    setFrames(prev => prev.map(f => {
+      if (f.id !== frameId) return f;
+      return { ...f, children: f.children.map(c => c.id === elId ? { ...c, attrs: { ...c.attrs, [attr]: value } } : c) };
+    }));
+    setSaved(false);
+  }, []);
+
   // ── Add component from picker ────────────────────────────────────────────────
   const handleAddComponent = (comp: ComponentDef) => {
     const newBlock: Block = {
@@ -1438,31 +1476,85 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
   // resolution: instances are still copies, not live references. Going further
   // would require every tree-walking site in the app — renderer, exporter, AI
   // context, layers panels, promotions — to become instance-aware, which isn't
-  // something to improvise without being able to click-test each site.)
+  // something to improvise without being able to click-test each site. What
+  // this DOES do properly: slot-marked child paths (docs/BLUEPRINT.md §5 /
+  // LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §10) are preserved per-instance
+  // instead of being blindly overwritten — see lib/componentInstances.ts.
+  // A push only ever touches instances on the SAME variant as the source.
   const handleUpdateMaster = useCallback((instanceEl: ElementNode) => {
     const comp = components.find((c) => c.id === instanceEl.componentId);
     if (!comp) return;
-    if (!confirm(`Update "${comp.name}" from this instance and push the change to every other instance? Their own position and size are kept; content and structure are replaced.`)) return;
+    const slotPaths = comp.slotPaths ?? [];
+    const variantId = instanceEl.variantId;
+    const variantLabel = variantId ? ` (${comp.variants?.find((v) => v.id === variantId)?.name ?? "variant"})` : "";
+    if (!confirm(`Update "${comp.name}"${variantLabel} from this instance and push the change to every other instance on the same variant? Slot content on other instances is kept; everything else syncs to match.`)) return;
 
-    const { layout: _layout, componentId: _cid, ...masterShape } = instanceEl;
+    const { layout: _layout, componentId: _cid, variantId: _vid, ...masterShape } = instanceEl;
     const newRoot: ElementNode = JSON.parse(JSON.stringify(masterShape));
-    setComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, rootElement: newRoot } : c)));
+    setComponents((prev) => prev.map((c) => {
+      if (c.id !== comp.id) return c;
+      if (!variantId) return { ...c, rootElement: newRoot };
+      return { ...c, variants: (c.variants ?? []).map((v) => (v.id === variantId ? { ...v, rootElement: newRoot } : v)) };
+    }));
 
     let updated = 0;
     setElements((prev) => prev.map((el) => {
-      if (el.id === instanceEl.id || el.componentId !== comp.id) return el;
+      if (el.id === instanceEl.id || el.componentId !== comp.id || el.variantId !== variantId) return el;
       updated++;
       const fresh = deepCloneWithNewIds([JSON.parse(JSON.stringify(newRoot))])[0];
-      const base = el.layout ?? fresh.layout;
-      return {
-        ...fresh,
-        componentId: comp.id,
-        label: comp.name,
-        layout: { x: base?.x ?? 60, y: base?.y ?? 60, width: base?.width ?? 300, height: base?.height ?? 120 },
-      };
+      const merged = mergeMasterIntoInstance(fresh, el, slotPaths);
+      return { ...merged, label: comp.name };
     }));
     setSaved(false);
     toast.success(`Master updated${updated ? ` — pushed to ${updated} other instance${updated > 1 ? "s" : ""}` : ""}`);
+  }, [components, deepCloneWithNewIds]);
+
+  // ── Slots: mark/unmark a child path within an instance as preserved-per-instance ──
+  const toggleSlotPath = useCallback((componentId: string, slotKey: string) => {
+    setComponents((prev) => prev.map((c) => {
+      if (c.id !== componentId) return c;
+      const current = c.slotPaths ?? [];
+      const next = current.includes(slotKey) ? current.filter((k) => k !== slotKey) : [...current, slotKey];
+      return { ...c, slotPaths: next };
+    }));
+    setSaved(false);
+  }, []);
+
+  // ── Variants: save the current instance's content as a new named variant ──
+  const handleSaveVariant = useCallback((instanceEl: ElementNode) => {
+    const comp = components.find((c) => c.id === instanceEl.componentId);
+    if (!comp) return;
+    const name = window.prompt("Variant name (e.g. Primary, Secondary, Outline):");
+    if (!name?.trim()) return;
+    const variant: ComponentVariant = {
+      id: `var-${crypto.randomUUID().slice(0, 8)}`,
+      name: name.trim().slice(0, 40),
+      rootElement: JSON.parse(JSON.stringify({ ...instanceEl, layout: undefined, componentId: undefined, variantId: undefined })),
+    };
+    setComponents((prev) => prev.map((c) => (c.id === comp.id ? { ...c, variants: [...(c.variants ?? []), variant] } : c)));
+    setElements((prev) => updateElementInTree(prev, instanceEl.id, (n) => ({ ...n, variantId: variant.id })));
+    setSaved(false);
+    toast.success(`Saved variant "${variant.name}"`);
+  }, [components]);
+
+  // ── Variants: switch a selected instance to a different (or the default) variant ──
+  const handleSwitchVariant = useCallback((instanceEl: ElementNode, variantId: string | null) => {
+    const comp = components.find((c) => c.id === instanceEl.componentId);
+    if (!comp) return;
+    const root = variantId ? comp.variants?.find((v) => v.id === variantId)?.rootElement : comp.rootElement;
+    if (!root) return;
+    const fresh = deepCloneWithNewIds([JSON.parse(JSON.stringify(root))])[0];
+    setElements((prev) => prev.map((el) => {
+      if (el.id !== instanceEl.id) return el;
+      return {
+        ...fresh,
+        componentId: comp.id,
+        variantId: variantId ?? undefined,
+        label: comp.name,
+        layout: { ...(instanceEl.layout ?? { width: 300, height: 120 }), x: instanceEl.layout?.x ?? 60, y: instanceEl.layout?.y ?? 60 },
+      };
+    }));
+    setSaved(false);
   }, [components, deepCloneWithNewIds]);
 
   // ── AI rewrite — 3 copy variants for a text field (Round 5 Ch 5.2) ───────────
@@ -1478,6 +1570,140 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
       throw new Error(data?.message || "Rewrite failed");
     }
     return data.variants as string[];
+  };
+
+  // ── Domain settings (Phase 1 — docs/BLUEPRINT.md) ────────────────────────────
+  const [showDomainModal, setShowDomainModal] = useState(false);
+
+  const handleSetDomain = async (domain: string) => {
+    if (!project) throw new Error("No project");
+    const res = await fetch(`${API}/api/builder/${project._id}/custom-domain`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ domain }),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast.error(data?.message || "Failed to add domain."); throw new Error(data?.message); }
+    setProject((p) => p ? { ...p, customDomain: domain, customDomainVerified: false } : p);
+    toast.success("Domain added — verify DNS to go live.");
+    return { verificationToken: data.verificationToken as string };
+  };
+
+  const handleVerifyDomain = async () => {
+    if (!project) throw new Error("No project");
+    const res = await fetch(`${API}/api/builder/${project._id}/verify-domain`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) { toast.error(data?.message || "Verification failed."); throw new Error(data?.message); }
+    if (data.verified) {
+      setProject((p) => p ? { ...p, customDomainVerified: true } : p);
+      toast.success("Domain verified — you're live!");
+    }
+    return { verified: !!data.verified };
+  };
+
+  const handleRemoveDomain = async () => {
+    if (!project) return;
+    const res = await fetch(`${API}/api/builder/${project._id}/custom-domain`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) { toast.error("Failed to remove domain."); throw new Error("remove failed"); }
+    setProject((p) => p ? { ...p, customDomain: undefined, customDomainVerified: false } : p);
+    toast.success("Custom domain removed");
+  };
+
+  // ── CMS field binding (Phase 2 — docs/BLUEPRINT.md) ──────────────────────────
+  const [cmsCollections, setCmsCollections] = useState<CmsCollection[]>([]);
+  const [bindDataTarget, setBindDataTarget] = useState<{ elementId: string; frameId?: string; kind: "text" | "image" } | null>(null);
+  // Phase 3 — CMS list repeat
+  const [cmsListTarget, setCmsListTarget] = useState<{ elementId: string; frameId?: string; current: CmsListQuery | null } | null>(null);
+  // Phase 3 — CMS template page (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §9.2)
+  const [cmsTemplateTarget, setCmsTemplateTarget] = useState<Page | null>(null);
+
+  useEffect(() => {
+    if (!project?._id || !token) return;
+    fetch(`${API}/api/cms-collections/collections?projectId=${project._id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((r) => (r.ok ? r.json() : [])).then(setCmsCollections).catch(() => {});
+  }, [project?._id, token]);
+
+  const cmsBindingLabel = (binding?: CmsBinding | null): string | null => {
+    if (!binding) return null;
+    const collection = cmsCollections.find((c) => c._id === binding.collectionId);
+    const field = collection?.fields.find((f) => f.key === binding.field);
+    return `${collection?.name ?? "Unknown"} → ${field?.label ?? binding.field}`;
+  };
+
+  const cmsListLabel = (query?: CmsListQuery | null): string | null => {
+    if (!query) return null;
+    const collection = cmsCollections.find((c) => c._id === query.collectionId);
+    return `List: ${collection?.name ?? "Unknown"}`;
+  };
+
+  const updateTargetElement = (target: { elementId: string; frameId?: string }, updater: (el: ElementNode) => ElementNode) => {
+    if (target.frameId) {
+      setFrames((prev) => prev.map((f) => {
+        if (f.id !== target.frameId) return f;
+        return { ...f, children: f.children.map((c) => c.id === target.elementId ? updater(c) : c) };
+      }));
+    } else {
+      setElements((prev) => updateElementInTree(prev, target.elementId, updater));
+    }
+    setSaved(false);
+  };
+
+  const applyCmsBinding = (target: { elementId: string; frameId?: string }, binding: CmsBinding | undefined) => {
+    updateTargetElement(target, (el) => ({ ...el, cmsBinding: binding }));
+  };
+
+  const applyCmsList = (target: { elementId: string; frameId?: string }, cmsList: CmsListQuery | undefined) => {
+    updateTargetElement(target, (el) => ({ ...el, cmsList }));
+  };
+
+  // ── Product field binding (Phase 3 — docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §9.4) ──
+  const [products, setProducts] = useState<Product[]>([]);
+  const [bindProductTarget, setBindProductTarget] = useState<{ elementId: string; frameId?: string; kind: "text" | "image" } | null>(null);
+  const [productListTarget, setProductListTarget] = useState<{ elementId: string; frameId?: string; current: ProductListQuery | null } | null>(null);
+  const [productTemplateTarget, setProductTemplateTarget] = useState<Page | null>(null);
+  const [showPaymentsModal, setShowPaymentsModal] = useState(false);
+  // Phase 5 (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §11.1) — page hierarchy
+  const [pageParentTarget, setPageParentTarget] = useState<Page | null>(null);
+  // Phase 6 (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §12) — asset picker modal;
+  // holds the callback to invoke with the chosen URL, or null when closed.
+  const [assetPickerCallback, setAssetPickerCallback] = useState<((url: string) => void) | null>(null);
+
+  useEffect(() => {
+    if (!project?._id || !token) return;
+    fetch(`${API}/api/commerce/products?projectId=${project._id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((r) => (r.ok ? r.json() : [])).then(setProducts).catch(() => {});
+  }, [project?._id, token]);
+
+  const productBindingLabel = (binding?: ProductBinding | null): string | null => {
+    if (!binding) return null;
+    const product = products.find((p) => p._id === binding.productId);
+    return `${product?.name ?? "Unknown"} → ${binding.field}`;
+  };
+
+  const productListLabel = (query?: ProductListQuery | null): string | null => {
+    if (!query) return null;
+    if (!query.collectionId) return "List: All products";
+    return "List: Products";
+  };
+
+  const applyProductBinding = (target: { elementId: string; frameId?: string }, productBinding: ProductBinding | undefined) => {
+    updateTargetElement(target, (el) => ({ ...el, productBinding }));
+  };
+
+  const applyProductList = (target: { elementId: string; frameId?: string }, productList: ProductListQuery | undefined) => {
+    updateTargetElement(target, (el) => ({ ...el, productList }));
+  };
+
+  const toggleAddToCart = (target: { elementId: string; frameId?: string }) => {
+    updateTargetElement(target, (el) => ({ ...el, addToCart: el.addToCart ? undefined : true }));
   };
 
   // ── AI SEO + Theme modals (Round 5 Ch 5.2 / Ch 8.1) ──────────────────────────
@@ -1515,6 +1741,46 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
     if (!res.ok) { toast.error("Failed to save SEO."); throw new Error("save failed"); }
     setProject((p) => p ? { ...p, pages: p.pages.map((pg) => pg.id === selectedId ? { ...pg, seo } : pg) } : p);
     toast.success("SEO saved");
+  };
+
+  // Phase 3 — marks/unmarks a page as a CMS template (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §9.2)
+  const handleSetCmsTemplate = async (pageId: string, cmsTemplate: CmsTemplate | null) => {
+    if (!project) return;
+    const res = await fetch(`${API}/api/builder/project/pages/${pageId}?projectId=${project._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ cmsTemplate }),
+    });
+    if (!res.ok) { toast.error("Failed to update CMS template."); throw new Error("save failed"); }
+    setProject((p) => p ? { ...p, pages: p.pages.map((pg) => pg.id === pageId ? { ...pg, cmsTemplate: cmsTemplate ?? undefined } : pg) } : p);
+    toast.success(cmsTemplate ? "Page set as CMS template" : "CMS template removed");
+  };
+
+  // Phase 3 — marks/unmarks a page as a product detail template (§9.5)
+  const handleSetProductTemplate = async (pageId: string, productTemplate: ProductTemplate | null) => {
+    if (!project) return;
+    const res = await fetch(`${API}/api/builder/project/pages/${pageId}?projectId=${project._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ productTemplate }),
+    });
+    if (!res.ok) { toast.error("Failed to update product template."); throw new Error("save failed"); }
+    setProject((p) => p ? { ...p, pages: p.pages.map((pg) => pg.id === pageId ? { ...pg, productTemplate: productTemplate ?? undefined } : pg) } : p);
+    toast.success(productTemplate ? "Page set as product template" : "Product template removed");
+  };
+
+  // Phase 5 §11.1 — sets/clears this page's parent (real nested URL hierarchy)
+  const handleSetPageParent = async (pageId: string, parentId: string | null) => {
+    if (!project) return;
+    const res = await fetch(`${API}/api/builder/project/pages/${pageId}?projectId=${project._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ parentId }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) { toast.error(data?.message || "Failed to update page hierarchy."); return; }
+    setProject((p) => p ? { ...p, pages: p.pages.map((pg) => pg.id === pageId ? { ...pg, parentId: parentId ?? undefined } : pg) } : p);
+    toast.success(parentId ? "Page nested" : "Page moved to top level");
   };
 
   const handleThemeGenerate = async (themePrompt: string): Promise<AiTheme> => {
@@ -2760,6 +3026,22 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
           <Palette size={13} /> Theme
         </button>
 
+        {/* Domains (Phase 1) */}
+        <button onClick={() => setShowDomainModal(true)}
+          className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Custom domain settings"
+        >
+          <Globe size={13} /> Domain
+        </button>
+
+        {/* Payments (Phase 3) */}
+        <button onClick={() => setShowPaymentsModal(true)}
+          className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          title="Stripe Connect settings"
+        >
+          <CreditCard size={13} /> Payments
+        </button>
+
         {/* Export */}
         <button onClick={() => setShowExport(true)}
           className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -2822,6 +3104,14 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
             { id: "layers", Icon: Layers,  label: "Layers" },
             { id: "design", Icon: Layout,  label: "Design" },
             { id: "styles", Icon: Palette, label: "Styles" },
+            { id: "cms",    Icon: Database, label: "Data"   },
+            { id: "commerce", Icon: Package, label: "Shop"  },
+            { id: "site",   Icon: Globe,    label: "Site"   },
+            { id: "assets", Icon: ImageIcon, label: "Assets" },
+            { id: "forms",  Icon: Inbox,    label: "Forms"  },
+            { id: "audit",  Icon: ShieldCheck, label: "Audit" },
+            { id: "history", Icon: History, label: "History" },
+            { id: "analytics", Icon: BarChart3, label: "Analytics" },
           ] as const).map(({ id, Icon, label }) => (
             <button
               key={id}
@@ -2847,7 +3137,7 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
             {activeTab !== "add" && (
               <div className="h-10 flex items-center justify-between px-4 border-b border-gray-100 flex-shrink-0">
                 <span className="text-[12px] font-bold text-gray-800">
-                  {activeTab === "ai" ? "AI Assistant" : activeTab === "layers" ? "Layers" : activeTab === "styles" ? "Styles" : activeTab === "design" ? "Sections" : ""}
+                  {activeTab === "ai" ? "AI Assistant" : activeTab === "layers" ? "Layers" : activeTab === "styles" ? "Styles" : activeTab === "design" ? "Sections" : activeTab === "cms" ? "Data" : activeTab === "commerce" ? "Shop" : activeTab === "site" ? "Site" : activeTab === "assets" ? "Assets" : activeTab === "forms" ? "Forms" : activeTab === "audit" ? "Audit" : activeTab === "history" ? "History" : activeTab === "analytics" ? "Analytics" : ""}
                 </span>
                 <button onClick={() => setActiveTab(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
                   <X size={14} />
@@ -3027,6 +3317,46 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
                 />
               )}
 
+              {/* CMS (Phase 2) */}
+              {activeTab === "cms" && project && (
+                <CmsPanel projectId={project._id} />
+              )}
+
+              {/* Commerce (Phase 3) */}
+              {activeTab === "commerce" && project && (
+                <ProductsPanel projectId={project._id} />
+              )}
+
+              {/* Site structure (Phase 5) */}
+              {activeTab === "site" && project && (
+                <SitePanel projectId={project._id} pages={project.pages.map((p) => ({ id: p.id, name: p.name }))} />
+              )}
+
+              {/* Asset library (Phase 6) */}
+              {activeTab === "assets" && project && (
+                <AssetLibraryPanel projectId={project._id} />
+              )}
+
+              {/* Form submissions (Phase 7) */}
+              {activeTab === "forms" && project && (
+                <FormSubmissionsPanel projectId={project._id} />
+              )}
+
+              {/* Accessibility + Performance audit (Phase 7) */}
+              {activeTab === "audit" && project && (
+                <AuditPanel projectId={project._id} pages={project.pages.map((p) => ({ id: p.id, name: p.name, elements: p.elements ?? [] }))} />
+              )}
+
+              {/* Publish history (Phase 7) */}
+              {activeTab === "history" && project && (
+                <VersionHistoryPanel projectId={project._id} onRestored={() => window.location.reload()} />
+              )}
+
+              {/* Customer analytics (Phase 8) */}
+              {activeTab === "analytics" && project && (
+                <AnalyticsPanel projectId={project._id} />
+              )}
+
               {/* Add Panel */}
               {activeTab === "add" && (
                 <AddPanel
@@ -3070,24 +3400,64 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
                 <button onClick={() => setShowAddPage(true)} title="Add page" style={{ width: 20, height: 20, borderRadius: 4, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(0,0,0,0.35)", fontSize: 15, lineHeight: 1 }}>+</button>
               </div>
               <div style={{ padding: "0 6px 6px" }}>
-                {project?.pages.map((p) => (
-                  <button key={p.id} onClick={() => selectPage(project, p.id)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 6, width: "100%",
-                      padding: "5px 7px", borderRadius: 5, border: "none", cursor: "pointer",
-                      background: selectedId === p.id ? "rgba(99,68,212,0.1)" : "transparent",
-                      color: selectedId === p.id ? "#6344d4" : "rgba(0,0,0,0.55)",
-                      fontSize: 12, fontWeight: selectedId === p.id ? 600 : 400, textAlign: "left",
-                      transition: "background 0.1s",
-                    }}
-                    onMouseEnter={e => { if (selectedId !== p.id) (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.04)"; }}
-                    onMouseLeave={e => { if (selectedId !== p.id) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ flexShrink: 0, opacity: 0.5 }}><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                    {selectedId === p.id && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#6344d4", flexShrink: 0, display: "inline-block" }} />}
-                  </button>
-                ))}
+                {project?.pages.map((p) => {
+                  // Phase 5 §11.1 — visual indent by hierarchy depth (cycle-guarded)
+                  let depth = 0;
+                  const seen = new Set<string>();
+                  let cursor: Page | undefined = p;
+                  while (cursor?.parentId && !seen.has(cursor.id)) {
+                    seen.add(cursor.id);
+                    cursor = project.pages.find((pg) => pg.id === cursor!.parentId);
+                    if (cursor) depth++;
+                  }
+                  return (
+                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: depth * 14 }}>
+                    <button onClick={() => selectPage(project, p.id)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0,
+                        padding: "5px 7px", borderRadius: 5, border: "none", cursor: "pointer",
+                        background: selectedId === p.id ? "rgba(99,68,212,0.1)" : "transparent",
+                        color: selectedId === p.id ? "#6344d4" : "rgba(0,0,0,0.55)",
+                        fontSize: 12, fontWeight: selectedId === p.id ? 600 : 400, textAlign: "left",
+                        transition: "background 0.1s",
+                      }}
+                      onMouseEnter={e => { if (selectedId !== p.id) (e.currentTarget as HTMLElement).style.background = "rgba(0,0,0,0.04)"; }}
+                      onMouseLeave={e => { if (selectedId !== p.id) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ flexShrink: 0, opacity: 0.5 }}><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                      {selectedId === p.id && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#6344d4", flexShrink: 0, display: "inline-block" }} />}
+                    </button>
+                    <button
+                      onClick={() => setCmsTemplateTarget(p)}
+                      title={p.cmsTemplate ? `CMS template: /${p.cmsTemplate.pathPrefix}/…` : "Set as CMS template"}
+                      style={{
+                        width: 20, height: 20, flexShrink: 0, borderRadius: 4, border: "none", cursor: "pointer",
+                        background: "transparent", display: "flex", alignItems: "center", justifyContent: "center",
+                        color: p.cmsTemplate ? "#6344d4" : "rgba(0,0,0,0.2)",
+                      }}
+                    ><Database size={11} /></button>
+                    <button
+                      onClick={() => setProductTemplateTarget(p)}
+                      title={p.productTemplate ? `Product template: /${p.productTemplate.pathPrefix}/…` : "Set as product detail template"}
+                      style={{
+                        width: 20, height: 20, flexShrink: 0, borderRadius: 4, border: "none", cursor: "pointer",
+                        background: "transparent", display: "flex", alignItems: "center", justifyContent: "center",
+                        color: p.productTemplate ? "#16a34a" : "rgba(0,0,0,0.2)",
+                      }}
+                    ><Package size={11} /></button>
+                    <button
+                      onClick={() => setPageParentTarget(p)}
+                      title={p.parentId ? "Nested page — click to change parent" : "Set parent page"}
+                      style={{
+                        width: 20, height: 20, flexShrink: 0, borderRadius: 4, border: "none", cursor: "pointer",
+                        background: "transparent", display: "flex", alignItems: "center", justifyContent: "center",
+                        color: p.parentId ? "#6344d4" : "rgba(0,0,0,0.2)",
+                      }}
+                    ><GitBranch size={11} /></button>
+                  </div>
+                  );
+                })}
                 {showAddPage && (
                   <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 2px" }}>
                     <input
@@ -3108,8 +3478,8 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
             <div style={{ height: 40, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 8px", borderBottom: "1px solid #f0f0f0" }}>
               {/* Tabs */}
               <div style={{ display: "flex", gap: 1, background: "rgba(0,0,0,0.05)", borderRadius: 6, padding: 2 }}>
-                {(["layers", "add", "assets"] as const).map((t) => {
-                  const isActive = activeTab === t || (t === "layers" && activeTab !== "add" && activeTab !== "assets");
+                {(["layers", "add", "assets", "cms", "commerce", "site", "forms", "audit", "history", "analytics"] as const).map((t) => {
+                  const isActive = activeTab === t || (t === "layers" && activeTab !== "add" && activeTab !== "assets" && activeTab !== "cms" && activeTab !== "commerce" && activeTab !== "site" && activeTab !== "forms" && activeTab !== "audit" && activeTab !== "history" && activeTab !== "analytics");
                   return (
                     <button key={t} onClick={() => setActiveTab(isActive ? "layers" : t)}
                       style={{
@@ -3119,12 +3489,12 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
                         textTransform: "capitalize", whiteSpace: "nowrap",
                         boxShadow: isActive ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
                       }}
-                    >{t === "add" ? "Elements" : t === "assets" ? "Assets" : "Layers"}</button>
+                    >{t === "add" ? "Elements" : t === "assets" ? "Assets" : t === "cms" ? "Data" : t === "commerce" ? "Shop" : t === "site" ? "Site" : t === "forms" ? "Forms" : t === "audit" ? "Audit" : t === "history" ? "History" : t === "analytics" ? "Analytics" : "Layers"}</button>
                   );
                 })}
               </div>
               {/* Add element quick-button (only on Layers tab) */}
-              {activeTab !== "add" && activeTab !== "assets" && (
+              {activeTab !== "add" && activeTab !== "assets" && activeTab !== "cms" && activeTab !== "commerce" && activeTab !== "site" && activeTab !== "forms" && activeTab !== "audit" && activeTab !== "history" && activeTab !== "analytics" && (
                 <button
                   onClick={() => { setElements((prev) => { const el = createElement("div"); return [...prev, { ...el, layout: { x: 40, y: 40 + prev.length * 20, width: 400, height: 120 } }]; }); setSaved(false); }}
                   title="Add element"
@@ -3133,8 +3503,48 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
               )}
             </div>
 
+            {/* CMS (Phase 2) */}
+            {activeTab === "cms" && project && (
+              <CmsPanel projectId={project._id} />
+            )}
+
+            {/* Commerce (Phase 3) */}
+            {activeTab === "commerce" && project && (
+              <ProductsPanel projectId={project._id} />
+            )}
+
+            {/* Site structure (Phase 5) */}
+            {activeTab === "site" && project && (
+              <SitePanel projectId={project._id} pages={project.pages.map((p) => ({ id: p.id, name: p.name }))} />
+            )}
+
+            {/* Asset library (Phase 6) */}
+            {activeTab === "assets" && project && (
+              <AssetLibraryPanel projectId={project._id} />
+            )}
+
+            {/* Form submissions (Phase 7) */}
+            {activeTab === "forms" && project && (
+              <FormSubmissionsPanel projectId={project._id} />
+            )}
+
+            {/* Accessibility + Performance audit (Phase 7) */}
+            {activeTab === "audit" && project && (
+              <AuditPanel projectId={project._id} pages={project.pages.map((p) => ({ id: p.id, name: p.name, elements: p.elements ?? [] }))} />
+            )}
+
+            {/* Publish history (Phase 7) */}
+            {activeTab === "history" && project && (
+              <VersionHistoryPanel projectId={project._id} onRestored={() => window.location.reload()} />
+            )}
+
+            {/* Customer analytics (Phase 8) */}
+            {activeTab === "analytics" && project && (
+              <AnalyticsPanel projectId={project._id} />
+            )}
+
             {/* Layers content — frames + free elements */}
-            {activeTab !== "add" && activeTab !== "assets" && (
+            {activeTab !== "add" && activeTab !== "assets" && activeTab !== "cms" && activeTab !== "commerce" && activeTab !== "site" && activeTab !== "forms" && activeTab !== "audit" && activeTab !== "history" && activeTab !== "analytics" && (
               <CanvasLayersPanel
                 frames={frames}
                 freeElements={elements}
@@ -3242,6 +3652,9 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
             <FreeCanvas
                 elements={elements}
                 frames={frames}
+                breakpoint={canvasViewport}
+                guides={guides}
+                onGuidesChange={(next) => { setGuides(next); setSaved(false); }}
                 selectedId={selectedElementId}
                 selectedIds={freeSelectedIds}
                 onSelect={(id, multi) => {
@@ -3452,6 +3865,9 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
                       justifyContent={frame.justifyContent}
                       alignItems={frame.alignItems}
                       gridColumns={frame.gridColumns ?? 3}
+                      gridRows={frame.gridRows ?? 0}
+                      flexWrap={frame.flexWrap ?? "wrap"}
+                      breakpoint={canvasViewport}
                       onSelect={(id, multi) => {
                         setSelectedFrameId(frame.id);
                         setSelectedElementId(null);
@@ -3604,6 +4020,13 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
           const el = freeEl ?? frameEl;
           const isFrameEl = !freeEl && !!frameEl;
 
+          // Phase 4 — slots (only meaningful for top-level free elements; components never live inside frames)
+          const enclosing = el && !isFrameEl ? findEnclosingInstance(elements, el.id) : null;
+          const enclosingComponent = enclosing ? components.find((c) => c.id === enclosing.instance.componentId) ?? null : null;
+          const slotKey = enclosing ? pathToKey(enclosing.path) : null;
+          // Phase 4 — variants (only meaningful when the selected element IS an instance root)
+          const instanceComponent = el?.componentId ? components.find((c) => c.id === el.componentId) ?? null : null;
+
           return (
             <div style={{ width: 260, flexShrink: 0, background: "#ffffff", borderLeft: "1px solid rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
               {/* Panel header */}
@@ -3695,6 +4118,35 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
                     }
                     setSaved(false);
                   }}
+                  onAttrChange={(attr, val) => {
+                    if (isFrameEl && activeFrame) {
+                      handleFrameChildAttrsChange(activeFrame.id, el.id, attr, val);
+                    } else {
+                      setElements(prev => updateElementAttrs(prev, el.id, attr, val));
+                    }
+                    setSaved(false);
+                  }}
+                  onOpenAssetPicker={(onPick) => setAssetPickerCallback(() => onPick)}
+                  cmsBindingLabel={cmsBindingLabel(el.cmsBinding)}
+                  onOpenBindData={() => setBindDataTarget({ elementId: el.id, frameId: isFrameEl ? activeFrame?.id : undefined, kind: el.tag === "img" ? "image" : "text" })}
+                  onUnbindData={() => applyCmsBinding({ elementId: el.id, frameId: isFrameEl ? activeFrame?.id : undefined }, undefined)}
+                  cmsListLabel={cmsListLabel(el.cmsList)}
+                  onOpenCmsList={() => setCmsListTarget({ elementId: el.id, frameId: isFrameEl ? activeFrame?.id : undefined, current: el.cmsList ?? null })}
+                  onRemoveCmsList={() => applyCmsList({ elementId: el.id, frameId: isFrameEl ? activeFrame?.id : undefined }, undefined)}
+                  productBindingLabel={productBindingLabel(el.productBinding)}
+                  onOpenBindProduct={() => setBindProductTarget({ elementId: el.id, frameId: isFrameEl ? activeFrame?.id : undefined, kind: el.tag === "img" ? "image" : "text" })}
+                  onUnbindProduct={() => applyProductBinding({ elementId: el.id, frameId: isFrameEl ? activeFrame?.id : undefined }, undefined)}
+                  productListLabel={productListLabel(el.productList)}
+                  onOpenProductList={() => setProductListTarget({ elementId: el.id, frameId: isFrameEl ? activeFrame?.id : undefined, current: el.productList ?? null })}
+                  onRemoveProductList={() => applyProductList({ elementId: el.id, frameId: isFrameEl ? activeFrame?.id : undefined }, undefined)}
+                  isAddToCart={!!el.addToCart}
+                  onToggleAddToCart={() => toggleAddToCart({ elementId: el.id, frameId: isFrameEl ? activeFrame?.id : undefined })}
+                  isSlot={!!enclosingComponent && !!slotKey && (enclosingComponent.slotPaths ?? []).includes(slotKey)}
+                  onToggleSlot={enclosingComponent && slotKey ? () => toggleSlotPath(enclosingComponent.id, slotKey) : undefined}
+                  variantOptions={instanceComponent?.variants?.map((v) => ({ id: v.id, name: v.name }))}
+                  activeVariantId={el.variantId}
+                  onSaveVariant={instanceComponent ? () => handleSaveVariant(el) : undefined}
+                  onSwitchVariant={instanceComponent ? (variantId) => handleSwitchVariant(el, variantId) : undefined}
                   onAddAutoLayout={el.children.length > 0 ? () => {
                     const num = (v: unknown) => parseFloat(String(v ?? 0)) || 0;
                     const pos = el.children.map((c) => ({ l: num(c.styles?.desktop?.left), t: num(c.styles?.desktop?.top) }));
@@ -3716,12 +4168,12 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
                       styles: {
                         ...el.styles,
                         desktop: {
-                          ...el.styles.desktop,
+                          ...el.styles?.desktop,
                           display: "flex",
                           flexDirection: dir,
-                          gap: el.styles.desktop.gap ?? "16px",
-                          padding: el.styles.desktop.padding ?? "16px",
-                          alignItems: el.styles.desktop.alignItems ?? "flex-start",
+                          gap: el.styles?.desktop.gap ?? "16px",
+                          padding: el.styles?.desktop.padding ?? "16px",
+                          alignItems: el.styles?.desktop.alignItems ?? "flex-start",
                         },
                       },
                     };
@@ -3919,6 +4371,94 @@ const [classes, setClasses]                     = useState<StyleClass[]>([]);
           onGenerate={handleThemeGenerate}
           onApply={handleThemeApply}
           onClose={() => setShowThemeModal(false)}
+        />
+      )}
+      {showDomainModal && project && (
+        <DomainModal
+          projectSlug={project.slug}
+          domain={{ customDomain: project.customDomain, customDomainVerified: project.customDomainVerified }}
+          onSetDomain={handleSetDomain}
+          onVerify={handleVerifyDomain}
+          onRemove={handleRemoveDomain}
+          onClose={() => setShowDomainModal(false)}
+        />
+      )}
+
+      {bindDataTarget && project && (
+        <BindDataModal
+          projectId={project._id}
+          target={bindDataTarget.kind}
+          onBind={(binding) => { applyCmsBinding(bindDataTarget, binding); setBindDataTarget(null); }}
+          onClose={() => setBindDataTarget(null)}
+        />
+      )}
+
+      {cmsListTarget && project && (
+        <CmsListModal
+          projectId={project._id}
+          initial={cmsListTarget.current}
+          onSave={(query) => { applyCmsList(cmsListTarget, query); setCmsListTarget(null); }}
+          onClose={() => setCmsListTarget(null)}
+        />
+      )}
+
+      {cmsTemplateTarget && project && (
+        <CmsTemplateModal
+          projectId={project._id}
+          pageName={cmsTemplateTarget.name}
+          initial={cmsTemplateTarget.cmsTemplate ?? null}
+          onSave={(template) => { handleSetCmsTemplate(cmsTemplateTarget.id, template); setCmsTemplateTarget(null); }}
+          onRemove={() => { handleSetCmsTemplate(cmsTemplateTarget.id, null); setCmsTemplateTarget(null); }}
+          onClose={() => setCmsTemplateTarget(null)}
+        />
+      )}
+
+      {bindProductTarget && project && (
+        <BindProductModal
+          projectId={project._id}
+          target={bindProductTarget.kind}
+          onBind={(binding) => { applyProductBinding(bindProductTarget, binding as ProductBinding); setBindProductTarget(null); }}
+          onClose={() => setBindProductTarget(null)}
+        />
+      )}
+
+      {productListTarget && project && (
+        <ProductListModal
+          projectId={project._id}
+          initial={productListTarget.current}
+          onSave={(query) => { applyProductList(productListTarget, query); setProductListTarget(null); }}
+          onClose={() => setProductListTarget(null)}
+        />
+      )}
+
+      {productTemplateTarget && project && (
+        <ProductTemplateModal
+          pageName={productTemplateTarget.name}
+          initial={productTemplateTarget.productTemplate ?? null}
+          onSave={(template) => { handleSetProductTemplate(productTemplateTarget.id, template); setProductTemplateTarget(null); }}
+          onRemove={() => { handleSetProductTemplate(productTemplateTarget.id, null); setProductTemplateTarget(null); }}
+          onClose={() => setProductTemplateTarget(null)}
+        />
+      )}
+
+      {showPaymentsModal && project && (
+        <PaymentsModal projectId={project._id} onClose={() => setShowPaymentsModal(false)} />
+      )}
+
+      {pageParentTarget && project && (
+        <PageParentModal
+          page={pageParentTarget}
+          pages={project.pages.map((p) => ({ id: p.id, name: p.name, parentId: p.parentId }))}
+          onSave={(parentId) => { handleSetPageParent(pageParentTarget.id, parentId); setPageParentTarget(null); }}
+          onClose={() => setPageParentTarget(null)}
+        />
+      )}
+
+      {assetPickerCallback && project && (
+        <AssetPickerModal
+          projectId={project._id}
+          onPick={(url) => assetPickerCallback(url)}
+          onClose={() => setAssetPickerCallback(null)}
         />
       )}
 

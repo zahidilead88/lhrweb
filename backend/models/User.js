@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema(
     stripeCustomerId:      { type: String },
     passwordResetToken:    { type: String },
     passwordResetExpires:  { type: Date },
+    // Phase 8 (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §14) — agency/white-label
+    // tenancy. Null agencyId = an independent account, unaffected by any of this.
+    agencyId:   { type: mongoose.Schema.Types.ObjectId, ref: "Agency", default: null },
+    agencyRole: { type: String, enum: ["owner", "team", "client", null], default: null },
   },
   { timestamps: true }
 );

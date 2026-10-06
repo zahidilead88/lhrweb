@@ -4,6 +4,7 @@ const BuilderProject = require("../models/BuilderProject");
 const CmsCollection  = require("../models/CmsCollection");
 const CmsEntry       = require("../models/CmsEntry");
 const { auth }        = require("../middleware/auth");
+const { resolveProject } = require("../lib/projectAccess");
 
 // Round 5 doc, Part 6 — CMS collections/entries CRUD. Resolution into published
 // pages (cmsField bindings, __repeat repeaters, generateHTML integration) is a
@@ -12,10 +13,27 @@ const { auth }        = require("../middleware/auth");
 const ALLOWED_FIELD_TYPES = ["text", "richtext", "image", "number", "date", "boolean"];
 function toSlug(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""); }
 
+// Phase 8 (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §14) — agency-aware:
+// see backend/lib/projectAccess.js.
 async function assertOwnsProject(projectId, userId) {
-  const project = await BuilderProject.findOne({ _id: projectId, userId }).select("_id").lean();
-  return project;
+  return resolveProject(userId, projectId, { select: "_id", lean: true });
 }
+
+// ── Public (Phase 2 — resolves cmsField bindings on the live/public site) ────
+// No auth: a project's CMS content is exactly as public as the site itself.
+router.get("/public/:projectId", async (req, res) => {
+  try {
+    const collections = await CmsCollection.find({ projectId: req.params.projectId }).select("-projectId").lean();
+    const collectionIds = collections.map((c) => c._id);
+    const entries = collectionIds.length
+      ? await CmsEntry.find({ collectionId: { $in: collectionIds }, published: true }).lean()
+      : [];
+    res.json({ collections, entries });
+  } catch (err) {
+    console.error("cms public fetch error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 // ── Collections ────────────────────────────────────────────────────────────
 

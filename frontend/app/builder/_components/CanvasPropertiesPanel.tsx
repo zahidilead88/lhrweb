@@ -9,8 +9,9 @@ import {
   AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   FlipHorizontal, FlipVertical, RotateCcw, StretchHorizontal,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd,
+  Database, Link2Off, List, Pencil, Package, Grid3x3, ShoppingCart,
 } from "lucide-react";
-import type { ElementNode } from "@/types/builder";
+import type { ElementNode, FrameEffect } from "@/types/builder";
 import { ColorSwatchButton } from "./ColorPicker";
 import FontPicker from "./FontPicker";
 
@@ -20,6 +21,7 @@ const BDR = "#e8e8e8";
 const T   = "rgba(0,0,0,0.8)";
 const M   = "rgba(0,0,0,0.4)";
 const BR  = "#7B6EF5";
+const PRODUCT_COLOR = "#16a34a";
 
 const inputSx: React.CSSProperties = {
   width: "100%", height: 32, borderRadius: 6,
@@ -145,7 +147,7 @@ const CONT_TAGS = new Set(["div","section","article","main","aside","header","fo
 export interface CanvasPropertiesPanelProps {
   element: ElementNode;
   breakpoint: "desktop" | "tablet" | "mobile";
-  onStyleChange: (prop: string, val: string) => void;
+  onStyleChange: (prop: string, val: string | number | FrameEffect[]) => void;
   onContentChange?: (content: string) => void;
   layout?: { x: number; y: number; width: number; height: number; aspectLocked?: boolean };
   onLayoutChange?: (field: string, val: number | string | boolean | Record<string, unknown>) => void;
@@ -153,15 +155,59 @@ export interface CanvasPropertiesPanelProps {
   onAddAutoLayout?: () => void;
   /** When element is inside an auto-layout frame, hide X/Y and show sizing/order */
   layoutContext?: "free" | "auto";
+  // Phase 2 (docs/BLUEPRINT.md) — CMS field binding
+  onOpenBindData?: () => void;
+  onUnbindData?: () => void;
+  cmsBindingLabel?: string | null;
+  // Phase 3 — CMS list repeat
+  onOpenCmsList?: () => void;
+  onRemoveCmsList?: () => void;
+  cmsListLabel?: string | null;
+  // Phase 3 — product field binding
+  onOpenBindProduct?: () => void;
+  onUnbindProduct?: () => void;
+  productBindingLabel?: string | null;
+  // Phase 3 — product list repeat
+  onOpenProductList?: () => void;
+  onRemoveProductList?: () => void;
+  productListLabel?: string | null;
+  // Phase 3 — Add to Cart toggle
+  onToggleAddToCart?: () => void;
+  isAddToCart?: boolean;
+  // Phase 4 (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §10) — slots: this element is a
+  // direct-or-nested child of a component instance; toggles whether its content is
+  // preserved per-instance across "Update Master" pushes.
+  isSlot?: boolean;
+  onToggleSlot?: () => void;
+  // Phase 4 — variants: only meaningful when `element` itself is an instance root
+  variantOptions?: { id: string; name: string }[];
+  activeVariantId?: string;
+  onSaveVariant?: () => void;
+  onSwitchVariant?: (variantId: string | null) => void;
+  // Phase 6 — asset library picker. The panel asks the host (page.tsx, which
+  // owns the modal) to open the picker with a callback for the chosen URL.
+  onOpenAssetPicker?: (onPick: (url: string) => void) => void;
+  onAttrChange?: (attr: string, val: string) => void;
 }
 
 export default function CanvasPropertiesPanel({
   element, breakpoint, onStyleChange, onContentChange, layout, onLayoutChange,
   layoutContext = "free", onAddAutoLayout,
+  onOpenBindData, onUnbindData, cmsBindingLabel,
+  onOpenCmsList, onRemoveCmsList, cmsListLabel,
+  onOpenBindProduct, onUnbindProduct, productBindingLabel,
+  onOpenProductList, onRemoveProductList, productListLabel,
+  onToggleAddToCart, isAddToCart,
+  isSlot, onToggleSlot,
+  variantOptions, activeVariantId, onSaveVariant, onSwitchVariant,
+  onOpenAssetPicker, onAttrChange,
 }: CanvasPropertiesPanelProps) {
   const raw = (element.styles?.[breakpoint] ?? {}) as Record<string, string>;
   const g   = (p: string) => raw[p] ?? "";
   const set = onStyleChange;
+  const shadowLayers = ((element.styles?.[breakpoint] as { boxShadowLayers?: FrameEffect[] } | undefined)?.boxShadowLayers) ?? [];
+  const perSideBorder = !!(g("borderTop") || g("borderRight") || g("borderBottom") || g("borderLeft"));
+  const perCornerRadius = !!(g("borderTopLeftRadius") || g("borderTopRightRadius") || g("borderBottomLeftRadius") || g("borderBottomRightRadius"));
 
   const isText = TEXT_TAGS.has(element.tag);
   const isCont = CONT_TAGS.has(element.tag);
@@ -182,6 +228,51 @@ export default function CanvasPropertiesPanel({
 
   return (
     <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", fontSize: 12 }}>
+
+      {/* ══ COMPONENT — slot toggle + variant switcher (Phase 4) ═════════════ */}
+      {(onToggleSlot || variantOptions) && (
+        <>
+          <SectionHeader title="Component" />
+          <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+            {onToggleSlot && (
+              <button
+                onClick={onToggleSlot}
+                style={{
+                  width: "100%", padding: "8px 10px", borderRadius: 8, cursor: "pointer",
+                  border: isSlot ? "1px solid rgba(234,88,12,0.25)" : `1px dashed ${BDR}`,
+                  background: isSlot ? "rgba(234,88,12,0.06)" : "none",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  fontSize: 11.5, fontWeight: 600, color: isSlot ? "#ea580c" : M,
+                }}
+                title="A slot's content is kept on every instance across an 'Update Master' push, instead of being overwritten"
+              >
+                {isSlot ? "Slot — content kept per instance" : "Mark as Slot"}
+              </button>
+            )}
+            {variantOptions && (
+              <div>
+                <Label>Variant</Label>
+                <select
+                  value={activeVariantId ?? ""}
+                  onChange={(e) => onSwitchVariant?.(e.target.value || null)}
+                  style={{ ...inputSx, marginTop: 4 }}
+                >
+                  <option value="">Default</option>
+                  {variantOptions.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
+                {onSaveVariant && (
+                  <button
+                    onClick={onSaveVariant}
+                    style={{ width: "100%", marginTop: 6, padding: "6px 10px", borderRadius: 8, border: `1px dashed ${BDR}`, background: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, color: M }}
+                  >
+                    Save current as new variant…
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* ══ POSITION ══════════════════════════════════════════════════════════ */}
       <SectionHeader title="Position" />
@@ -528,23 +619,64 @@ export default function CanvasPropertiesPanel({
             </select>
           </div>
         </TwoCol>
-        {/* Per-corner radius */}
-        <TwoCol>
-          <div>
-            <Label>Corner radius</Label>
-            <div style={{ display: "flex", alignItems: "center", height: 32, borderRadius: 6, border: `1px solid ${BDR}`, background: BG, marginTop: 5, overflow: "hidden" }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginLeft: 7, flexShrink: 0 }}>
-                <path d="M3 13V6C3 4.343 4.343 3 6 3H13" stroke={M} strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              <input type="number"
-                value={(g("borderRadius")||"").replace("px","")}
-                placeholder="0"
-                onChange={e => set("borderRadius", e.target.value ? `${e.target.value}px` : "")}
-                style={{ flex: 1, background: "none", border: "none", color: T, fontSize: 12, fontWeight: 500, padding: "0 6px", outline: "none" }}
-              />
+        {/* Corner radius — uniform, or per-corner */}
+        <div>
+          {!perCornerRadius ? (
+            <TwoCol>
+              <div>
+                <Label>Corner radius</Label>
+                <div style={{ display: "flex", alignItems: "center", height: 32, borderRadius: 6, border: `1px solid ${BDR}`, background: BG, marginTop: 5, overflow: "hidden" }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ marginLeft: 7, flexShrink: 0 }}>
+                    <path d="M3 13V6C3 4.343 4.343 3 6 3H13" stroke={M} strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  <input type="number"
+                    value={(g("borderRadius")||"").replace("px","")}
+                    placeholder="0"
+                    onChange={e => set("borderRadius", e.target.value ? `${e.target.value}px` : "")}
+                    style={{ flex: 1, background: "none", border: "none", color: T, fontSize: 12, fontWeight: 500, padding: "0 6px", outline: "none" }}
+                  />
+                </div>
+              </div>
+            </TwoCol>
+          ) : (
+            <div>
+              <Label>Corner radius (per corner)</Label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 5 }}>
+                {([
+                  { key: "borderTopLeftRadius", label: "TL" }, { key: "borderTopRightRadius", label: "TR" },
+                  { key: "borderBottomLeftRadius", label: "BL" }, { key: "borderBottomRightRadius", label: "BR" },
+                ] as const).map((c) => (
+                  <div key={c.key} style={{ display: "flex", alignItems: "center", height: 30, borderRadius: 6, border: `1px solid ${BDR}`, background: BG, overflow: "hidden" }}>
+                    <span style={{ padding: "0 6px", color: M, fontSize: 10, fontWeight: 700, borderRight: `1px solid ${BDR}` }}>{c.label}</span>
+                    <input type="number" value={(g(c.key)||"").replace("px","")} placeholder="0" min={0}
+                      onChange={e => set(c.key, e.target.value ? `${e.target.value}px` : "")}
+                      style={{ flex: 1, background: "none", border: "none", color: T, fontSize: 12, fontWeight: 500, padding: "0 6px", outline: "none" }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
+          <div
+            onClick={() => {
+              if (perCornerRadius) {
+                (["borderTopLeftRadius","borderTopRightRadius","borderBottomLeftRadius","borderBottomRightRadius"] as const).forEach((k) => set(k, ""));
+                set("borderRadius", g("borderTopLeftRadius") || "0px");
+              } else {
+                const r = g("borderRadius") || "0px";
+                set("borderTopLeftRadius", r); set("borderTopRightRadius", r);
+                set("borderBottomLeftRadius", r); set("borderBottomRightRadius", r);
+                set("borderRadius", "");
+              }
+            }}
+            style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "6px 0 0" }}
+          >
+            <div style={{ width: 13, height: 13, borderRadius: 3, border: `1.5px solid ${perCornerRadius ? BR : "#c8c8ce"}`, background: perCornerRadius ? BR : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {perCornerRadius && <svg width="7" height="5" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            </div>
+            <span style={{ fontSize: 11, color: M, fontWeight: 500 }}>Per-corner radius</span>
           </div>
-        </TwoCol>
+        </div>
       </div>
 
       {/* ══ TYPOGRAPHY (text elements only) ════════════════════════════════ */}
@@ -559,7 +691,9 @@ export default function CanvasPropertiesPanel({
             <div>
               <Label>Content</Label>
               <textarea value={element.content ?? ""} onChange={e => onContentChange?.(e.target.value)} rows={2}
-                style={{ ...inputSx, height: "auto", padding: "6px 8px", resize: "vertical", fontFamily: "inherit", marginTop: 4 }}
+                disabled={!!cmsBindingLabel}
+                title={cmsBindingLabel ? "Bound to CMS data — unbind to edit manually" : undefined}
+                style={{ ...inputSx, height: "auto", padding: "6px 8px", resize: "vertical", fontFamily: "inherit", marginTop: 4, opacity: cmsBindingLabel ? 0.5 : 1, cursor: cmsBindingLabel ? "not-allowed" : "text" }}
               />
             </div>
 
@@ -670,8 +804,215 @@ export default function CanvasPropertiesPanel({
               </div>
             </div>
 
+            {/* Decoration + transform — full option sets (the pill buttons above only toggle underline/uppercase) */}
+            <TwoCol>
+              <div>
+                <Label>Decoration</Label>
+                <select value={g("textDecoration")||"none"} onChange={e => set("textDecoration", e.target.value === "none" ? "" : e.target.value)}
+                  style={{ ...inputSx, marginTop: 5, appearance: "none" }}>
+                  {["none","underline","line-through","overline"].map(v => <option key={v} value={v}>{v.replace("-"," ")}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Transform</Label>
+                <select value={g("textTransform")||"none"} onChange={e => set("textTransform", e.target.value === "none" ? "" : e.target.value)}
+                  style={{ ...inputSx, marginTop: 5, appearance: "none" }}>
+                  {["none","uppercase","lowercase","capitalize"].map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+            </TwoCol>
+
+            {/* Truncation (-webkit-line-clamp) */}
+            <div>
+              <Label>Truncate after (lines)</Label>
+              <NumInput value={String(g("lineClamp") ?? "")} unit="" placeholder="Off" onChange={v => set("lineClamp", v ? Number(v) : "")}/>
+            </div>
+
           </div>
         </>
+      )}
+
+      {/* ══ FORM FIELD — name/required/type (Phase 7) ═════════════════════════ */}
+      {(element.tag === "input" || element.tag === "textarea" || element.tag === "select") && (
+        <>
+          <SectionHeader title="Form Field" />
+          <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div>
+              <Label>Field name</Label>
+              <input type="text" value={element.attrs?.name ?? ""} placeholder="e.g. email"
+                onChange={e => onAttrChange?.("name", e.target.value)}
+                style={{ ...inputSx, marginTop: 4 }}
+              />
+            </div>
+            {element.tag === "input" && (
+              <div>
+                <Label>Input type</Label>
+                <select value={element.attrs?.type ?? "text"} onChange={e => onAttrChange?.("type", e.target.value)}
+                  style={{ ...inputSx, marginTop: 4, appearance: "none" }}>
+                  {["text","email","tel","number","date","checkbox","radio","file"].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            )}
+            <div onClick={() => onAttrChange?.("required", element.attrs?.required === "true" ? "" : "true")} style={{ display: "flex", alignItems: "center", gap: 7, cursor: "pointer" }}>
+              <div style={{ width: 14, height: 14, borderRadius: 3, border: `1.5px solid ${element.attrs?.required === "true" ? BR : "#c8c8ce"}`, background: element.attrs?.required === "true" ? BR : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {element.attrs?.required === "true" && <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              </div>
+              <span style={{ fontSize: 11, color: "rgba(0,0,0,0.55)", fontWeight: 500 }}>Required</span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ══ IMAGE — src/alt + asset library (Phase 6) ═════════════════════════ */}
+      {element.tag === "img" && !cmsBindingLabel && (
+        <>
+          <SectionHeader title="Image" />
+          <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div>
+              <Label>Source</Label>
+              <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                <input type="text" value={element.attrs?.src ?? ""} placeholder="https://… image URL"
+                  onChange={e => onAttrChange?.("src", e.target.value)}
+                  style={{ ...inputSx, flex: 1 }}
+                />
+                {onOpenAssetPicker && (
+                  <button
+                    onClick={() => onOpenAssetPicker((url) => onAttrChange?.("src", url))}
+                    title="Browse asset library"
+                    style={{ height: 32, padding: "0 10px", borderRadius: 6, border: `1px solid ${BDR}`, background: BG, cursor: "pointer", fontSize: 11, fontWeight: 600, color: M, whiteSpace: "nowrap" }}
+                  >
+                    Browse…
+                  </button>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label>Alt text</Label>
+              <input type="text" value={element.attrs?.alt ?? ""} placeholder="Describes the image for screen readers"
+                onChange={e => onAttrChange?.("alt", e.target.value)}
+                style={{ ...inputSx, marginTop: 4 }}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ══ DATA — CMS field binding (Phase 2) ═══════════════════════════════ */}
+      {(isText || element.tag === "img") && (onOpenBindData || cmsBindingLabel) && (
+        <>
+          <SectionHeader title="Data" />
+          <div style={{ padding: "0 14px 12px" }}>
+            {cmsBindingLabel ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: 8, background: "rgba(99,68,212,0.06)", border: "1px solid rgba(99,68,212,0.18)" }}>
+                <Database size={12} color={BR} style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: BR, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cmsBindingLabel}</span>
+                <button onClick={onUnbindData} title="Unbind" style={{ background: "none", border: "none", cursor: "pointer", color: BR, display: "flex", flexShrink: 0 }}>
+                  <Link2Off size={13} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenBindData}
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px dashed ${BDR}`, background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: M }}
+              >
+                <Database size={12} /> Bind Data
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ══ DATA — CMS list repeat (Phase 3) ══════════════════════════════════ */}
+      {isCont && (onOpenCmsList || cmsListLabel) && (
+        <>
+          <SectionHeader title="Data" />
+          <div style={{ padding: "0 14px 12px" }}>
+            {cmsListLabel ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: 8, background: "rgba(99,68,212,0.06)", border: "1px solid rgba(99,68,212,0.18)" }}>
+                <List size={12} color={BR} style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: BR, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cmsListLabel}</span>
+                <button onClick={onOpenCmsList} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", color: BR, display: "flex", flexShrink: 0 }}>
+                  <Pencil size={12} />
+                </button>
+                <button onClick={onRemoveCmsList} title="Remove" style={{ background: "none", border: "none", cursor: "pointer", color: BR, display: "flex", flexShrink: 0 }}>
+                  <Link2Off size={13} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={onOpenCmsList}
+                style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px dashed ${BDR}`, background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: M }}
+              >
+                <List size={12} /> Convert to CMS List
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ══ DATA — Product field binding (Phase 3) ═══════════════════════════ */}
+      {(isText || element.tag === "img") && (onOpenBindProduct || productBindingLabel) && (
+        <div style={{ padding: "0 14px 12px" }}>
+          {productBindingLabel ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: 8, background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.18)" }}>
+              <Package size={12} color={PRODUCT_COLOR} style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: PRODUCT_COLOR, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{productBindingLabel}</span>
+              <button onClick={onUnbindProduct} title="Unbind" style={{ background: "none", border: "none", cursor: "pointer", color: PRODUCT_COLOR, display: "flex", flexShrink: 0 }}>
+                <Link2Off size={13} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenBindProduct}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px dashed ${BDR}`, background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: M }}
+            >
+              <Package size={12} /> Bind Product Data
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ══ DATA — Product list repeat (Phase 3) ═════════════════════════════ */}
+      {isCont && (onOpenProductList || productListLabel) && (
+        <div style={{ padding: "0 14px 12px" }}>
+          {productListLabel ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderRadius: 8, background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.18)" }}>
+              <Grid3x3 size={12} color={PRODUCT_COLOR} style={{ flexShrink: 0 }} />
+              <span style={{ flex: 1, fontSize: 11, fontWeight: 600, color: PRODUCT_COLOR, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{productListLabel}</span>
+              <button onClick={onOpenProductList} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", color: PRODUCT_COLOR, display: "flex", flexShrink: 0 }}>
+                <Pencil size={12} />
+              </button>
+              <button onClick={onRemoveProductList} title="Remove" style={{ background: "none", border: "none", cursor: "pointer", color: PRODUCT_COLOR, display: "flex", flexShrink: 0 }}>
+                <Link2Off size={13} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenProductList}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: 8, border: `1px dashed ${BDR}`, background: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: M }}
+            >
+              <Grid3x3 size={12} /> Convert to Product List
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ══ DATA — Add to Cart toggle (Phase 3) ══════════════════════════════ */}
+      {element.tag === "button" && onToggleAddToCart && (
+        <div style={{ padding: "0 14px 12px" }}>
+          <button
+            onClick={onToggleAddToCart}
+            style={{
+              width: "100%", padding: "8px 10px", borderRadius: 8, cursor: "pointer",
+              border: isAddToCart ? "1px solid rgba(22,163,74,0.18)" : `1px dashed ${BDR}`,
+              background: isAddToCart ? "rgba(22,163,74,0.06)" : "none",
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              fontSize: 11.5, fontWeight: 600, color: isAddToCart ? PRODUCT_COLOR : M,
+            }}
+          >
+            <ShoppingCart size={12} /> {isAddToCart ? "Add to Cart button — on" : "Make Add to Cart button"}
+          </button>
+        </div>
       )}
 
       {/* ══ FILL — Solid / Linear / Radial / Image / None (Figma-style) ═══════ */}
@@ -762,9 +1103,20 @@ export default function CanvasPropertiesPanel({
 
               {fillType === "image" && (
                 <>
-                  <input type="text" value={imgUrl} placeholder="https://… image URL"
-                    onChange={e => set("backgroundImage", `url(${e.target.value})`)}
-                    style={{ height: 30, borderRadius: 6, border: `1px solid ${BDR}`, background: BG, color: T, fontSize: 11, padding: "0 8px", outline: "none" }} />
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input type="text" value={imgUrl} placeholder="https://… image URL"
+                      onChange={e => set("backgroundImage", `url(${e.target.value})`)}
+                      style={{ flex: 1, height: 30, borderRadius: 6, border: `1px solid ${BDR}`, background: BG, color: T, fontSize: 11, padding: "0 8px", outline: "none" }} />
+                    {onOpenAssetPicker && (
+                      <button
+                        onClick={() => onOpenAssetPicker((url) => set("backgroundImage", `url(${url})`))}
+                        title="Browse asset library"
+                        style={{ height: 30, padding: "0 10px", borderRadius: 6, border: `1px solid ${BDR}`, background: BG, cursor: "pointer", fontSize: 11, fontWeight: 600, color: M, whiteSpace: "nowrap" }}
+                      >
+                        Browse…
+                      </button>
+                    )}
+                  </div>
                   <TwoCol>
                     <select value={g("backgroundSize")||"cover"} onChange={e => set("backgroundSize",e.target.value)} style={{ ...inputSx, appearance: "none" }}>
                       {["cover","contain","auto","100% 100%"].map(v => <option key={v} value={v}>{v}</option>)}
@@ -786,42 +1138,135 @@ export default function CanvasPropertiesPanel({
           <span style={{ fontSize: 13, fontWeight: 600, color: g("borderColor") ? T : "rgba(0,0,0,0.35)" }}>Stroke</span>
           <button onClick={() => !g("borderColor") && set("borderColor","#000000")} style={{ background: "none", border: "none", cursor: "pointer", color: M }}><Plus size={13}/></button>
         </div>
-        {g("borderColor") && (
-          <div style={{ padding: "0 14px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, height: 32, borderRadius: 6, border: `1px solid ${BDR}`, background: BG, padding: "0 8px" }}>
-              <ColorSwatch value={g("borderColor")} onChange={v => set("borderColor",v)} />
-              <input type="text" value={(g("borderColor")||"").replace("#","")} placeholder="000000"
-                onChange={e => set("borderColor", `#${e.target.value.replace("#","")}`)}
-                style={{ flex: 1, background: "none", border: "none", color: T, fontSize: 12, outline: "none" }}
-              />
-              <button onClick={() => set("borderColor","")} style={{ background: "none", border: "none", cursor: "pointer", color: M, display: "flex" }}><Minus size={13}/></button>
+        {g("borderColor") && (() => {
+          const style  = g("borderStyle") || "solid";
+          const color  = g("borderColor");
+          const sides: { key: "borderTop" | "borderRight" | "borderBottom" | "borderLeft"; label: string }[] = [
+            { key: "borderTop", label: "T" }, { key: "borderRight", label: "R" },
+            { key: "borderBottom", label: "B" }, { key: "borderLeft", label: "L" },
+          ];
+          const sideWidth = (key: string) => parseFloat(g(key)) || 0;
+          const togglePerSide = () => {
+            if (perSideBorder) {
+              sides.forEach((s) => set(s.key, ""));
+              set("borderWidth", "1px");
+            } else {
+              const w = g("borderWidth") || "1px";
+              sides.forEach((s) => set(s.key, `${w} ${style} ${color}`));
+              set("borderWidth", "");
+            }
+          };
+          return (
+            <div style={{ padding: "0 14px 10px", display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, height: 32, borderRadius: 6, border: `1px solid ${BDR}`, background: BG, padding: "0 8px" }}>
+                <ColorSwatch value={color} onChange={v => {
+                  set("borderColor", v);
+                  if (perSideBorder) sides.forEach((s) => set(s.key, `${sideWidth(s.key)}px ${style} ${v}`));
+                }} />
+                <input type="text" value={color.replace("#","")} placeholder="000000"
+                  onChange={e => {
+                    const v = `#${e.target.value.replace("#","")}`;
+                    set("borderColor", v);
+                    if (perSideBorder) sides.forEach((s) => set(s.key, `${sideWidth(s.key)}px ${style} ${v}`));
+                  }}
+                  style={{ flex: 1, background: "none", border: "none", color: T, fontSize: 12, outline: "none" }}
+                />
+                <button onClick={() => { set("borderColor",""); sides.forEach((s) => set(s.key, "")); }} style={{ background: "none", border: "none", cursor: "pointer", color: M, display: "flex" }}><Minus size={13}/></button>
+              </div>
+              {!perSideBorder && (
+                <TwoCol>
+                  <NumInput value={g("borderWidth")||""} unit="px" placeholder="1" onChange={v => set("borderWidth",v)}/>
+                  <select value={style} onChange={e => set("borderStyle",e.target.value)} style={{ ...inputSx, appearance: "none" }}>
+                    {["solid","dashed","dotted","none"].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </TwoCol>
+              )}
+              <div onClick={togglePerSide} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", padding: "2px 0" }}>
+                <div style={{ width: 13, height: 13, borderRadius: 3, border: `1.5px solid ${perSideBorder ? BR : "#c8c8ce"}`, background: perSideBorder ? BR : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {perSideBorder && <svg width="7" height="5" viewBox="0 0 8 6" fill="none"><path d="M1 3l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </div>
+                <span style={{ fontSize: 11, color: M, fontWeight: 500 }}>Per-side width</span>
+              </div>
+              {perSideBorder && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  {sides.map((s) => (
+                    <div key={s.key} style={{ display: "flex", alignItems: "center", height: 30, borderRadius: 6, border: `1px solid ${BDR}`, background: BG, overflow: "hidden" }}>
+                      <span style={{ padding: "0 6px", color: M, fontSize: 10, fontWeight: 700, borderRight: `1px solid ${BDR}` }}>{s.label}</span>
+                      <input type="number" value={sideWidth(s.key) || ""} placeholder="0" min={0}
+                        onChange={e => set(s.key, `${e.target.value || 0}px ${style} ${color}`)}
+                        style={{ flex: 1, background: "none", border: "none", color: T, fontSize: 12, fontWeight: 500, padding: "0 6px", outline: "none" }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <TwoCol>
-              <NumInput value={g("borderWidth")||""} unit="px" placeholder="1" onChange={v => set("borderWidth",v)}/>
-              <select value={g("borderStyle")||"solid"} onChange={e => set("borderStyle",e.target.value)} style={{ ...inputSx, appearance: "none" }}>
-                {["solid","dashed","dotted","none"].map(v => <option key={v} value={v}>{v}</option>)}
-              </select>
-            </TwoCol>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
-      {/* ══ EFFECTS ═══════════════════════════════════════════════════════════ */}
+      {/* ══ EFFECTS — multi-shadow, blur, backdrop blur ═══════════════════════ */}
       <div style={{ borderTop: `1px solid ${BDR}` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: g("boxShadow") ? T : "rgba(0,0,0,0.35)" }}>Effects</span>
-          <button onClick={() => !g("boxShadow") && set("boxShadow","0 2px 8px rgba(0,0,0,0.15)")} style={{ background: "none", border: "none", cursor: "pointer", color: M }}><Plus size={13}/></button>
+          <span style={{ fontSize: 13, fontWeight: 600, color: shadowLayers.length ? T : "rgba(0,0,0,0.35)" }}>Shadows</span>
+          <button
+            onClick={() => set("boxShadowLayers", [...shadowLayers, { visible: true, type: "drop-shadow", x: 0, y: 2, blur: 8, spread: 0, color: "rgba(0,0,0,0.15)" }])}
+            style={{ background: "none", border: "none", cursor: "pointer", color: M }}
+          ><Plus size={13}/></button>
         </div>
-        {g("boxShadow") && (
-          <div style={{ padding: "0 14px 10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, height: 32, borderRadius: 6, border: `1px solid ${BDR}`, background: BG, padding: "0 8px" }}>
-              <span style={{ fontSize: 10, color: M, fontWeight: 600, flexShrink: 0 }}>Shadow</span>
-              <input value={g("boxShadow")} onChange={e => set("boxShadow",e.target.value)}
-                style={{ flex: 1, background: "none", border: "none", color: T, fontSize: 11, outline: "none" }}/>
-              <button onClick={() => set("boxShadow","")} style={{ background: "none", border: "none", cursor: "pointer", color: M, display: "flex" }}><Minus size={13}/></button>
-            </div>
+        {shadowLayers.length > 0 && (
+          <div style={{ padding: "0 14px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+            {shadowLayers.map((eff, i) => (
+              <div key={i} style={{ border: `1px solid ${BDR}`, borderRadius: 6, padding: 6, background: BG }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 5 }}>
+                  <button
+                    onClick={() => { const n = shadowLayers.slice(); n[i] = { ...eff, visible: !eff.visible }; set("boxShadowLayers", n); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: eff.visible ? T : M, display: "flex" }}
+                    title={eff.visible ? "Hide" : "Show"}
+                  >{eff.visible ? <Eye size={12}/> : <EyeOff size={12}/>}</button>
+                  <select value={eff.type} onChange={e => { const n = shadowLayers.slice(); n[i] = { ...eff, type: e.target.value as FrameEffect["type"] }; set("boxShadowLayers", n); }}
+                    style={{ flex: 1, height: 24, borderRadius: 5, border: `1px solid ${BDR}`, background: "#fff", fontSize: 10, color: T, appearance: "none", padding: "0 4px" }}>
+                    <option value="drop-shadow">Drop shadow</option>
+                    <option value="inner-shadow">Inner shadow</option>
+                  </select>
+                  <ColorSwatch value={eff.color.startsWith("rgba") ? "#000000" : eff.color} onChange={c => { const n = shadowLayers.slice(); n[i] = { ...eff, color: c }; set("boxShadowLayers", n); }} />
+                  <button onClick={() => set("boxShadowLayers", shadowLayers.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: M, display: "flex" }}><Minus size={12}/></button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 4 }}>
+                  {(["x","y","blur","spread"] as const).map((k) => (
+                    <div key={k}>
+                      <div style={{ fontSize: 8, color: M, marginBottom: 2, textAlign: "center", textTransform: "uppercase" }}>{k}</div>
+                      <input type="number" value={eff[k]} min={k === "blur" || k === "spread" ? 0 : undefined}
+                        onChange={e => { const n = shadowLayers.slice(); n[i] = { ...eff, [k]: parseFloat(e.target.value) || 0 }; set("boxShadowLayers", n); }}
+                        style={{ width: "100%", height: 24, borderRadius: 5, border: `1px solid ${BDR}`, background: "#fff", fontSize: 11, textAlign: "center", outline: "none", boxSizing: "border-box" }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
+        <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <TwoCol>
+            <div>
+              <Label>Blur</Label>
+              <NumInput
+                value={(g("filter")||"").match(/blur\(([\d.]+)px\)/)?.[1] ?? ""}
+                unit="px" placeholder="0"
+                onChange={v => set("filter", v ? `blur(${v})` : "")}
+              />
+            </div>
+            <div>
+              <Label>Backdrop blur</Label>
+              <NumInput
+                value={(g("backdropFilter")||"").match(/blur\(([\d.]+)px\)/)?.[1] ?? ""}
+                unit="px" placeholder="0"
+                onChange={v => set("backdropFilter", v ? `blur(${v})` : "")}
+              />
+            </div>
+          </TwoCol>
+        </div>
       </div>
 
       {/* ══ EXPORT ════════════════════════════════════════════════════════════ */}

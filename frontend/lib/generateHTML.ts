@@ -21,12 +21,12 @@ function renderAttrs(attrs: Record<string, string> = {}): string {
   return parts.length > 0 ? " " + parts.join(" ") : "";
 }
 
-function renderNode(el: ElementNode, isRoot = false): string {
+function renderNode(el: ElementNode, isRoot: boolean, showEditorLabels: boolean): string {
   const { tag, id, label, className, content, attrs, children, animation } = el;
 
   const dataId   = ` data-id="${id}"`;
   const classStr = className ? ` class="${className}"` : "";
-  const attrsStr = renderAttrs(attrs);
+  const attrsStr = renderAttrs(attrs ?? {});
   const animStr  = animation
     ? ` data-animate='${JSON.stringify(animation).replace(/'/g, "&#39;")}'`
     : "";
@@ -35,18 +35,19 @@ function renderNode(el: ElementNode, isRoot = false): string {
     return `<${tag}${dataId}${classStr}${attrsStr}${animStr}>`;
   }
 
+  const kids = children ?? [];
   const inner =
-    children.length > 0
-      ? children.map((c) => renderNode(c)).join("")
+    kids.length > 0
+      ? kids.map((c) => renderNode(c, false, showEditorLabels)).join("")
       : content
         ? escapeText(content)
         : "";
 
-  const labelBadge = (isRoot && label)
+  const labelBadge = (isRoot && label && showEditorLabels)
     ? `<div style="position:absolute;top:0;left:0;background:#6344d4;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:0 0 6px 0;pointer-events:none;z-index:9999;letter-spacing:0.05em;text-transform:uppercase;opacity:0.85">${escapeText(label)}</div>`
     : "";
 
-  const posStyle = (isRoot && label) ? ` style="position:relative"` : "";
+  const posStyle = (isRoot && label && showEditorLabels) ? ` style="position:relative"` : "";
 
   return `<${tag}${dataId}${classStr}${attrsStr}${animStr}${posStyle}>${labelBadge}${inner}</${tag}>`;
 }
@@ -54,7 +55,9 @@ function renderNode(el: ElementNode, isRoot = false): string {
 /**
  * Converts an ElementNode[] tree into an HTML string.
  * Every element gets a data-id attribute so the canvas can identify it via postMessage.
+ * `showEditorLabels` controls the purple frame-name badge — on for the editor canvas,
+ * off for anything a real site visitor could see (public site render, export).
  */
-export function generateHTML(elements: ElementNode[]): string {
-  return elements.map((el) => renderNode(el, true)).join("\n");
+export function generateHTML(elements: ElementNode[], showEditorLabels = true): string {
+  return elements.map((el) => renderNode(el, true, showEditorLabels)).join("\n");
 }

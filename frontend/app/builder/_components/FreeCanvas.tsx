@@ -11,7 +11,7 @@ import {
   Grid3x3, ZoomIn, ZoomOut, Minimize2, Plus, Save, Minus, ArrowRight, Scan, PenLine,
   Hexagon, Star, Image as ImageIcon, ChevronDown,
 } from "lucide-react";
-import type { ElementNode, FreeLayout, Frame, CanvasTool } from "@/types/builder";
+import type { ElementNode, FreeLayout, Frame, CanvasTool, CanvasGuide } from "@/types/builder";
 import { FRAME_PRESETS } from "@/types/builder";
 import FreeElement from "./FreeElement";
 import { applyAlignment } from "./AlignToolbar";
@@ -86,6 +86,12 @@ export interface FreeCanvasProps {
   onSwapComponent?: (el: ElementNode) => void;
   // Round 1 §6.3 — update the master from this instance, push to every sibling instance
   onUpdateMaster?: (el: ElementNode) => void;
+  // Phase 1 (docs/BLUEPRINT.md) — persistent ruler guides, dragged off the rulers
+  guides?: CanvasGuide[];
+  onGuidesChange?: (guides: CanvasGuide[]) => void;
+  // Phase 6 (bounded "Responsive Frames") — which breakpoint's style overrides
+  // to preview live on the canvas; defaults to "desktop" for backward compat.
+  breakpoint?: "desktop" | "tablet" | "mobile";
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -296,12 +302,15 @@ export default function FreeCanvas({
   tool, onToolChange,
   saved, saving, onSave, onNewFrame,
   onRegisterPaste, onCreateComponent, onSwapComponent, onUpdateMaster,
+  guides: persistedGuides = [], onGuidesChange,
+  breakpoint = "desktop",
 }: FreeCanvasProps) {
 
   // ── View state
   const [scale,    setScale]    = useState(0.5);
   const [offset,   setOffset]   = useState({ x: RULER_SZ + 60, y: RULER_SZ + 60 });
   const [showGrid, setShowGrid] = useState(false);
+  const [guideDrag, setGuideDrag] = useState<{ axis: "v" | "h"; screenPos: number } | null>(null);
   const [frameMenuOpen, setFrameMenuOpen] = useState(false);
   const frameMenuRef = useRef<HTMLDivElement>(null);
   const [shapeMenuOpen, setShapeMenuOpen] = useState(false);
@@ -394,6 +403,43 @@ export default function FreeCanvas({
     if (!r) return { x: 0, y: 0 };
     return { x: (cx - r.left - offset.x) / scale, y: (cy - r.top - offset.y) / scale };
   }, [offset, scale]);
+
+  // ── Persistent ruler guides — drag off a ruler to create one ──────────────────
+  const startGuideDrag = useCallback((axis: "v" | "h") => (e: React.MouseEvent) => {
+    e.preventDefault();
+    setGuideDrag({ axis, screenPos: axis === "h" ? e.clientY : e.clientX });
+  }, []);
+
+  useEffect(() => {
+    if (!guideDrag) return;
+    const onMove = (e: MouseEvent) => {
+      setGuideDrag((g) => g ? { ...g, screenPos: g.axis === "h" ? e.clientY : e.clientX } : g);
+    };
+    const onUp = (e: MouseEvent) => {
+      const r = containerRef.current?.getBoundingClientRect();
+      // Dropping back onto the ruler gutter cancels — didn't actually enter the canvas.
+      const droppedInCanvas = r
+        ? (guideDrag.axis === "h" ? e.clientY > r.top : e.clientX > r.left)
+        : false;
+      if (droppedInCanvas) {
+        const world = screenToCanvas(e.clientX, e.clientY);
+        const pos = guideDrag.axis === "h" ? world.y : world.x;
+        const next = [...persistedGuides, { id: `guide-${crypto.randomUUID().slice(0, 8)}`, axis: guideDrag.axis, pos }];
+        onGuidesChange?.(next);
+      }
+      setGuideDrag(null);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [guideDrag, persistedGuides, onGuidesChange, screenToCanvas]);
+
+  const removeGuide = useCallback((id: string) => {
+    onGuidesChange?.(persistedGuides.filter((g) => g.id !== id));
+  }, [persistedGuides, onGuidesChange]);
 
   const fitToScreen = useCallback((frames?: Frame[]) => {
     if (!containerRef.current) return;
@@ -570,7 +616,7 @@ export default function FreeCanvas({
         styles: {
           ...el.styles,
           desktop: {
-            ...el.styles.desktop,
+            ...el.styles?.desktop,
             position: "absolute" as const,
             left:  `${Math.round(l.x - minX)}px`,
             top:   `${Math.round(l.y - minY)}px`,
@@ -680,12 +726,12 @@ export default function FreeCanvas({
         styles: {
           ...el.styles,
           desktop: {
-            ...el.styles.desktop,
+            ...el.styles?.desktop,
             display: "flex",
             flexDirection: dir,
-            gap: el.styles.desktop.gap ?? "16px",
-            padding: el.styles.desktop.padding ?? "16px",
-            alignItems: el.styles.desktop.alignItems ?? "flex-start",
+            gap: el.styles?.desktop.gap ?? "16px",
+            padding: el.styles?.desktop.padding ?? "16px",
+            alignItems: el.styles?.desktop.alignItems ?? "flex-start",
           },
         },
       };
@@ -1128,14 +1174,22 @@ export default function FreeCanvas({
         {/* Top ruler row */}
         <div style={{ display: "flex", flexShrink: 0 }}>
           <div style={{ width: RULER_SZ, height: RULER_SZ, background: "#F5F5F5", flexShrink: 0, borderRight: "1px solid rgba(0,0,0,0.08)", borderBottom: "1px solid rgba(0,0,0,0.08)" }} />
-          <div style={{ flex: 1, overflow: "hidden", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+          <div
+            style={{ flex: 1, overflow: "hidden", borderBottom: "1px solid rgba(0,0,0,0.08)", cursor: "ns-resize" }}
+            onMouseDown={startGuideDrag("h")}
+            title="Drag down to add a horizontal guide"
+          >
             <Ruler orientation="h" size={RULER_SZ} scale={scale} offset={offset.x - RULER_SZ} />
           </div>
         </div>
 
         {/* Left ruler + Canvas */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          <div style={{ width: RULER_SZ, flexShrink: 0, overflow: "hidden", borderRight: "1px solid rgba(0,0,0,0.08)" }}>
+          <div
+            style={{ width: RULER_SZ, flexShrink: 0, overflow: "hidden", borderRight: "1px solid rgba(0,0,0,0.08)", cursor: "ew-resize" }}
+            onMouseDown={startGuideDrag("v")}
+            title="Drag right to add a vertical guide"
+          >
             <Ruler orientation="v" size={RULER_SZ} scale={scale} offset={offset.y - RULER_SZ} />
           </div>
 
@@ -1358,7 +1412,7 @@ export default function FreeCanvas({
                         />
                       ) : (
                         <>
-                          <FreeElement element={el} />
+                          <FreeElement element={el} breakpoint={breakpoint} />
                           {el.attrs?.["data-arrow"] === "true" && (
                             <svg
                               style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", width: 10, height: 10, overflow: "visible" }}
@@ -1424,7 +1478,7 @@ export default function FreeCanvas({
                             onElementsChange?.(elements.map(el =>
                               el.id !== selId ? el : {
                                 ...el,
-                                styles: { ...el.styles, desktop: { ...el.styles.desktop, transform: newTransform || undefined } },
+                                styles: { ...el.styles, desktop: { ...el.styles?.desktop, transform: newTransform || undefined } },
                               }
                             ));
                           };
@@ -1629,7 +1683,25 @@ export default function FreeCanvas({
                     ? <div key={i} style={{ position: "absolute", left: g.pos, top: 0, bottom: 0, width: 1, background: BRAND, pointerEvents: "none", zIndex: 9999 }} />
                     : <div key={i} style={{ position: "absolute", top: g.pos, left: 0, right: 0, height: 1, background: BRAND, pointerEvents: "none", zIndex: 9999 }} />
                 )}
+
+                {/* Persistent ruler guides (Phase 1) — double-click to remove */}
+                {persistedGuides.map((g) =>
+                  g.axis === "v"
+                    ? <div key={g.id} onDoubleClick={() => removeGuide(g.id)} title="Double-click to remove guide"
+                        style={{ position: "absolute", left: g.pos, top: 0, bottom: 0, width: 1, borderLeft: "1px dashed #06b6d4", pointerEvents: "auto", cursor: "ew-resize", zIndex: 9998 }} />
+                    : <div key={g.id} onDoubleClick={() => removeGuide(g.id)} title="Double-click to remove guide"
+                        style={{ position: "absolute", top: g.pos, left: 0, right: 0, height: 1, borderTop: "1px dashed #06b6d4", pointerEvents: "auto", cursor: "ns-resize", zIndex: 9998 }} />
+                )}
             </div>
+
+            {/* Live preview while dragging a new guide off a ruler */}
+            {guideDrag && (() => {
+              const r = containerRef.current?.getBoundingClientRect();
+              if (!r) return null;
+              return guideDrag.axis === "h"
+                ? <div style={{ position: "absolute", left: 0, right: 0, top: guideDrag.screenPos - r.top, height: 0, borderTop: "1px dashed #06b6d4", pointerEvents: "none", zIndex: 9999 }} />
+                : <div style={{ position: "absolute", top: 0, bottom: 0, left: guideDrag.screenPos - r.left, width: 0, borderLeft: "1px dashed #06b6d4", pointerEvents: "none", zIndex: 9999 }} />;
+            })()}
 
             {/* Rubber-band */}
             {rb && (

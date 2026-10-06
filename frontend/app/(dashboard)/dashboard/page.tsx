@@ -6,8 +6,9 @@ import Link from "next/link";
 import {
   Globe, LogOut, ArrowUpRight, User, Mail, Plus, Trash2,
   Sparkles, CheckCircle2, HeadphonesIcon, ExternalLink, Package,
-  LayoutDashboard, CreditCard, Calendar, AlertTriangle,
+  LayoutDashboard, CreditCard, Calendar, AlertTriangle, Building2,
 } from "lucide-react";
+import AgencyPanel from "./_components/AgencyPanel";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -21,9 +22,14 @@ interface Project {
   pages: Array<{ id: string; name: string; slug: string }>;
   prompt?: string;
   updatedAt: string;
+  // Phase 8 (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §14) — present when an
+  // agency owner/team member is viewing a project shared via their agency
+  // rather than one they personally created.
+  userId?: string;
+  agencyId?: string | null;
 }
 
-type NavItem = "websites" | "billing" | "profile" | "support";
+type NavItem = "websites" | "agency" | "billing" | "profile" | "support";
 
 interface Subscription {
   plan: string;
@@ -129,6 +135,7 @@ export default function ClientDashboard() {
 
   const navLinks: { id: NavItem; label: string; icon: React.ReactNode }[] = [
     { id: "websites", label: "My Websites", icon: <Globe className="w-4 h-4" />        },
+    { id: "agency",   label: "Agency",      icon: <Building2 className="w-4 h-4" />    },
     { id: "billing",  label: "Billing",     icon: <CreditCard className="w-4 h-4" />   },
     { id: "profile",  label: "Profile",     icon: <User className="w-4 h-4" />         },
     { id: "support",  label: "Support",     icon: <HeadphonesIcon className="w-4 h-4" /> },
@@ -211,6 +218,7 @@ export default function ClientDashboard() {
           <div>
             <h1 className="text-[15px] font-semibold" style={{ color: T.text }}>
               {activeNav === "websites" && "My Websites"}
+              {activeNav === "agency"   && "Agency"}
               {activeNav === "billing"  && "Billing & Subscription"}
               {activeNav === "profile"  && "Profile"}
               {activeNav === "support"  && "Support"}
@@ -279,6 +287,9 @@ export default function ClientDashboard() {
                         <span className="text-[11px] font-mono px-2 py-1 rounded-md" style={{ background: T.hover, color: T.muted }}>{proj.primaryColor || "#000"}</span>
                         <span className="text-[11px] px-2 py-1 rounded-md" style={{ background: T.hover, color: T.muted }}>{proj.pages?.length || 0} pages</span>
                         <span className="text-[11px] px-2 py-1 rounded-md uppercase" style={{ background: T.hover, color: T.muted }}>{proj.package || "Starter"}</span>
+                        {proj.agencyId && (
+                          <span className="text-[11px] px-2 py-1 rounded-md" style={{ background: T.accentBg, color: T.accent }}>Agency</span>
+                        )}
                       </div>
 
                       {/* Pages */}
@@ -392,6 +403,9 @@ export default function ClientDashboard() {
               )}
             </div>
           )}
+
+          {/* ── Agency (Phase 8) ── */}
+          {activeNav === "agency" && <AgencyPanel />}
 
           {/* ── Billing ── */}
           {activeNav === "billing" && (

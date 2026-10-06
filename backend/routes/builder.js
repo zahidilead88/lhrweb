@@ -3,8 +3,16 @@ const router         = express.Router();
 const crypto         = require("crypto");
 const BuilderProject = require("../models/BuilderProject");
 const User           = require("../models/User");
+const Version        = require("../models/Version");
 const { auth }       = require("../middleware/auth");
 const { runAiOperation, AiError } = require("../services/ai");
+const { resolveProject, listAccessibleProjects } = require("../lib/projectAccess");
+
+// Phase 7 (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §13) — bounded-scope
+// publish history: how many past snapshots a project keeps before the oldest
+// get pruned. Not user-configurable — a fixed cap keeps this a lightweight
+// audit trail, not an open-ended archive.
+const MAX_VERSIONS_PER_PROJECT = 25;
 
 // Spec error contract (Round 5 Ch 11): 402 QUOTA_EXCEEDED · 422 AI_GENERATION_FAILED · 503 AI_UNAVAILABLE
 function sendAiError(res, err, fallbackMsg) {
@@ -33,12 +41,19 @@ async function uniqueSlug(base, userId) {
   return slug;
 }
 
+// Phase 8 (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §14) — a project created
+// by an agency owner/team member is automatically tagged with that agency,
+// so every other owner/team member can access it too (see
+// backend/lib/projectAccess.js). A client (or an independent, non-agency
+// user) creating their own project is unaffected — agencyId stays null.
+function agencyIdForCreator(user) {
+  return (user?.agencyRole === "owner" || user?.agencyRole === "team") ? user.agencyId : null;
+}
+
 // ── GET /api/builder/projects (List all websites) ──────────────────────────────────
 router.get("/projects", auth, async (req, res) => {
   try {
-    const projects = await BuilderProject.find({ userId: req.user.userId })
-      .sort({ updatedAt: -1 })
-      .lean();
+    const projects = await listAccessibleProjects(req.user.userId, { lean: true });
     res.json(projects);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -54,11 +69,12 @@ router.post("/init-manual", auth, async (req, res) => {
     const { businessName, tagline, primaryColor } = req.body;
     const maxPrompt = 500;
     if (businessName && businessName.length > maxPrompt) return res.status(400).json({ message: `Business name too long (max ${maxPrompt} chars)` });
-    
+
     const bName = businessName || "My Website";
     const slug = await uniqueSlug(bName, req.user.userId);
     const project = await BuilderProject.create({
       userId:       req.user.userId,
+      agencyId:     agencyIdForCreator(user),
       status:       "ready",
       businessName: bName,
       slug,
@@ -69,7 +85,7 @@ router.post("/init-manual", auth, async (req, res) => {
       generatedAt:  new Date(),
       prompt:       null,
     });
-    
+
     res.json(project);
   } catch (err) {
     console.error(err);
@@ -92,6 +108,7 @@ router.post("/init-template", auth, async (req, res) => {
     const slug = await uniqueSlug(bName, req.user.userId);
     const project = await BuilderProject.create({
       userId:       req.user.userId,
+      agencyId:     agencyIdForCreator(user),
       status:       "ready",
       businessName: bName,
       slug,
@@ -113,18 +130,7 @@ router.get("/project", auth, async (req, res) => {
   try {
     const { projectId } = req.query;
     const isAdmin = req.user.role === "admin";
-
-    if (projectId) {
-      // Admins can open any user's project; regular users only their own
-      const query = isAdmin
-        ? { _id: projectId }
-        : { _id: projectId, userId: req.user.userId };
-      const project = await BuilderProject.findOne(query).lean();
-      return res.json(project || null);
-    }
-
-    // Fallback: fetch most recently modified project owned by this user
-    const project = await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 }).lean();
+    const project = await resolveProject(req.user.userId, projectId, { isAdmin, lean: true });
     res.json(project || null);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
@@ -158,6 +164,7 @@ router.post("/generate", auth, async (req, res) => {
 
     project = await BuilderProject.create({
       userId:       req.user.userId,
+      agencyId:     agencyIdForCreator(user),
       status:       "generating",
       prompt,
       package:      pkg,
@@ -225,9 +232,7 @@ router.post("/generate-page", auth, async (req, res) => {
 
     if (prompt.length > 2000) return res.status(400).json({ message: "Prompt too long (max 2000 chars)" });
 
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId }).lean()
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 }).lean();
+    const project = await resolveProject(req.user.userId, projectId, { lean: true });
 
     let blocks, meta;
     try {
@@ -258,9 +263,7 @@ router.post("/regenerate-block", auth, async (req, res) => {
     }
     const isAdmin = user.role === "admin";
 
-    const project = projectId
-      ? await BuilderProject.findOne(isAdmin ? { _id: projectId } : { _id: projectId, userId: req.user.userId }).lean()
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 }).lean();
+    const project = await resolveProject(req.user.userId, projectId, { isAdmin, lean: true });
 
     try {
       const { data, meta } = await runAiOperation(
@@ -284,17 +287,17 @@ router.post("/regenerate-block", auth, async (req, res) => {
 // Accepts V1 blocks[], V2 elements[], or both — whichever the client sends.
 router.put("/project/pages/:pageId", auth, async (req, res) => {
   try {
-    const { blocks, elements, seo } = req.body;
-    if (!blocks && !elements && !seo) return res.status(400).json({ message: "blocks, elements or seo required" });
+    const { blocks, elements, seo, cmsTemplate, productTemplate, parentId } = req.body;
+    if (!blocks && !elements && !seo && cmsTemplate === undefined && productTemplate === undefined && parentId === undefined) {
+      return res.status(400).json({ message: "blocks, elements, seo, cmsTemplate, productTemplate or parentId required" });
+    }
     if (blocks && !Array.isArray(blocks)) return res.status(400).json({ message: "blocks must be an array" });
     if (elements && !Array.isArray(elements)) return res.status(400).json({ message: "elements must be an array" });
 
     const { projectId } = req.query;
     const isAdmin = req.user.role === "admin";
 
-    const project = projectId
-      ? await BuilderProject.findOne(isAdmin ? { _id: projectId } : { _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId, { isAdmin });
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -308,7 +311,45 @@ router.put("/project/pages/:pageId", auth, async (req, res) => {
         title:       String(seo.title || "").slice(0, 80),
         description: String(seo.description || "").slice(0, 220),
         keywords:    Array.isArray(seo.keywords) ? seo.keywords.slice(0, 12).map((k) => String(k).slice(0, 40)) : undefined,
+        ogImage:     seo.ogImage ? String(seo.ogImage).slice(0, 500) : undefined,
       };
+    }
+    if (cmsTemplate === null) {
+      project.pages[idx].cmsTemplate = undefined;
+    } else if (cmsTemplate && typeof cmsTemplate === "object") {
+      if (!cmsTemplate.collectionId || !cmsTemplate.pathPrefix) {
+        return res.status(400).json({ message: "cmsTemplate requires collectionId and pathPrefix" });
+      }
+      project.pages[idx].cmsTemplate = {
+        collectionId: String(cmsTemplate.collectionId),
+        pathPrefix:   String(cmsTemplate.pathPrefix).toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 80),
+      };
+    }
+    if (productTemplate === null) {
+      project.pages[idx].productTemplate = undefined;
+    } else if (productTemplate && typeof productTemplate === "object") {
+      if (!productTemplate.pathPrefix) return res.status(400).json({ message: "productTemplate requires pathPrefix" });
+      project.pages[idx].productTemplate = {
+        pathPrefix: String(productTemplate.pathPrefix).toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 80),
+      };
+    }
+    // Phase 5 §11.1 — page hierarchy (parentId === null clears it; a string sets it, cycle-checked)
+    if (parentId === null) {
+      project.pages[idx].parentId = undefined;
+    } else if (typeof parentId === "string") {
+      if (parentId === req.params.pageId) return res.status(400).json({ message: "A page cannot be its own parent" });
+      const byId = new Map(project.pages.map((p) => [p.id, p]));
+      let cursor = byId.get(parentId);
+      const seen = new Set();
+      while (cursor) {
+        if (cursor.id === req.params.pageId || seen.has(cursor.id)) {
+          return res.status(400).json({ message: "That would create a circular page hierarchy" });
+        }
+        seen.add(cursor.id);
+        cursor = cursor.parentId ? byId.get(cursor.parentId) : undefined;
+      }
+      if (!byId.has(parentId)) return res.status(400).json({ message: "parentId must reference an existing page" });
+      project.pages[idx].parentId = parentId;
     }
     await project.save();
     res.json(project);
@@ -324,9 +365,7 @@ router.put("/project/components", auth, async (req, res) => {
     if (!Array.isArray(components)) return res.status(400).json({ message: "components must be an array" });
     if (components.length > 200) return res.status(400).json({ message: "Too many components (max 200)" });
 
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId);
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -339,15 +378,150 @@ router.put("/project/components", auth, async (req, res) => {
   }
 });
 
+// ── PUT /api/builder/project/menus (Save global navigation — Phase 5 §11.3) ───
+router.put("/project/menus", auth, async (req, res) => {
+  try {
+    const { menus, projectId } = req.body;
+    if (!Array.isArray(menus)) return res.status(400).json({ message: "menus must be an array" });
+    if (menus.length > 20) return res.status(400).json({ message: "Too many menus (max 20)" });
+
+    const project = await resolveProject(req.user.userId, projectId);
+
+    if (!project) return res.status(404).json({ message: "Project not found" });
+
+    project.menus = menus;
+    await project.save();
+    res.json({ menus: project.menus });
+  } catch (err) {
+    console.error("menus save error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── PUT /api/builder/project/redirects (Save redirects — Phase 5 §11.5) ───────
+router.put("/project/redirects", auth, async (req, res) => {
+  try {
+    const { redirects, projectId } = req.body;
+    if (!Array.isArray(redirects)) return res.status(400).json({ message: "redirects must be an array" });
+    if (redirects.length > 200) return res.status(400).json({ message: "Too many redirects (max 200)" });
+
+    const project = await resolveProject(req.user.userId, projectId);
+
+    if (!project) return res.status(404).json({ message: "Project not found" });
+
+    const clean = redirects.map((r) => ({
+      id: String(r.id || `redir-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+      source: String(r.source || "").slice(0, 500),
+      destination: String(r.destination || "").slice(0, 2000),
+      statusCode: r.statusCode === 302 ? 302 : 301,
+      enabled: r.enabled !== false,
+    })).filter((r) => r.source && r.destination);
+
+    project.redirects = clean;
+    await project.save();
+    res.json({ redirects: project.redirects });
+  } catch (err) {
+    console.error("redirects save error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── POST /api/builder/project/version (Snapshot current pages, pre-publish) ──
+// Phase 7 §13 — called once by the frontend right before the parallel save
+// PUTs that follow a "Publish" click, capturing whatever is *currently* live
+// (i.e. about to be overwritten) as a restorable snapshot. This route never
+// touches the live project document itself — zero risk to the existing save
+// path, which is untouched.
+router.post("/project/version", auth, async (req, res) => {
+  try {
+    const projectId = req.query.projectId || req.body?.projectId;
+    const project = await resolveProject(req.user.userId, projectId, { select: "pages", lean: true });
+    if (!project) return res.status(404).json({ message: "Project not found" });
+
+    await Version.create({
+      projectId: project._id,
+      userId: req.user.userId,
+      pages: project.pages,
+      label: String(req.body?.label || "").slice(0, 120),
+    });
+
+    const count = await Version.countDocuments({ projectId: project._id });
+    if (count > MAX_VERSIONS_PER_PROJECT) {
+      const stale = await Version.find({ projectId: project._id })
+        .sort({ createdAt: 1 })
+        .limit(count - MAX_VERSIONS_PER_PROJECT)
+        .select("_id")
+        .lean();
+      await Version.deleteMany({ _id: { $in: stale.map((v) => v._id) } });
+    }
+
+    res.status(201).json({ message: "Snapshot saved" });
+  } catch (err) {
+    console.error("version snapshot error:", err);
+    // A failed snapshot must never block the actual publish that follows it.
+    res.status(200).json({ message: "Snapshot skipped" });
+  }
+});
+
+// ── GET /api/builder/project/versions (List publish history) ────────────────
+router.get("/project/versions", auth, async (req, res) => {
+  try {
+    const projectId = req.query.projectId;
+    if (!projectId) return res.status(400).json({ message: "projectId is required." });
+    const owned = await resolveProject(req.user.userId, projectId, { select: "_id", lean: true });
+    if (!owned) return res.status(404).json({ message: "Project not found" });
+
+    const versions = await Version.find({ projectId })
+      .sort({ createdAt: -1 })
+      .select("_id label createdAt pages")
+      .lean();
+    // Page count/names only — the full snapshot only ships on restore, to keep the list light.
+    res.json({
+      versions: versions.map((v) => ({
+        _id: v._id,
+        label: v.label,
+        createdAt: v.createdAt,
+        pageCount: Array.isArray(v.pages) ? v.pages.length : 0,
+        pageNames: Array.isArray(v.pages) ? v.pages.map((p) => p.name).slice(0, 8) : [],
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// ── POST /api/builder/project/versions/:versionId/restore ───────────────────
+// "Rollback" (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §13's Version → Restore
+// → Preview → Publish diagram) — restores a snapshot's pages onto the live
+// project and saves immediately (save *is* publish in this bounded scope, so
+// restoring already republishes; "Preview" is just looking at the editor
+// afterward before the next real edit).
+router.post("/project/versions/:versionId/restore", auth, async (req, res) => {
+  try {
+    const projectId = req.query.projectId || req.body?.projectId;
+    const project = await resolveProject(req.user.userId, projectId);
+    if (!project) return res.status(404).json({ message: "Project not found" });
+
+    const version = await Version.findOne({ _id: req.params.versionId, projectId: project._id }).lean();
+    if (!version) return res.status(404).json({ message: "Version not found" });
+
+    project.pages = version.pages;
+    project.markModified("pages");
+    await project.save();
+    res.json({ pages: project.pages });
+  } catch (err) {
+    console.error("version restore error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ── PUT /api/builder/project/classes (Save named classes) ────────────────────
 router.put("/project/classes", auth, async (req, res) => {
   try {
     const { classes, projectId } = req.body;
     if (!Array.isArray(classes)) return res.status(400).json({ message: "classes must be an array" });
 
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId);
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -365,9 +539,7 @@ router.put("/project/tokens", auth, async (req, res) => {
     const { tokens, projectId } = req.body;
     if (!tokens || typeof tokens !== "object") return res.status(400).json({ message: "tokens object required" });
 
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId);
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -386,9 +558,7 @@ router.post("/project/pages", auth, async (req, res) => {
     if (user.package !== "pro") return res.status(403).json({ message: "Pro package required" });
 
     const { projectId } = req.query;
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId);
 
     if (!project) return res.status(404).json({ message: "Project not found" });
     if (project.pages.length >= PAGE_LIMITS.pro) {
@@ -411,9 +581,7 @@ router.patch("/project/pages/:pageId", auth, async (req, res) => {
     if (!name || !name.trim()) return res.status(400).json({ message: "name is required" });
 
     const { projectId } = req.query;
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId);
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -436,9 +604,7 @@ router.delete("/project/pages/:pageId", auth, async (req, res) => {
     if (user.package !== "pro") return res.status(403).json({ message: "Pro package required" });
 
     const { projectId } = req.query;
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId);
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -537,13 +703,15 @@ router.post("/:id/custom-domain", auth, async (req, res) => {
     const { domain } = req.body;
     if (!domain) return res.status(400).json({ message: "Domain is required" });
 
+    const accessible = await resolveProject(req.user.userId, req.params.id, { select: "_id", lean: true });
+    if (!accessible) return res.status(404).json({ message: "Site not found" });
+
     const token = crypto.randomBytes(16).toString("hex");
     const site  = await BuilderProject.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.userId },
+      { _id: accessible._id },
       { customDomain: domain, customDomainToken: token, customDomainVerified: false },
       { new: true }
     );
-    if (!site) return res.status(404).json({ message: "Site not found" });
 
     res.json({ verificationToken: token, message: `Add a DNS TXT record: _lhrweb-verify.${domain} = "${token}"` });
   } catch (err) {
@@ -554,7 +722,7 @@ router.post("/:id/custom-domain", auth, async (req, res) => {
 // ── POST /api/builder/:id/verify-domain (Check DNS TXT record) ───────────────────
 router.post("/:id/verify-domain", auth, async (req, res) => {
   try {
-    const site = await BuilderProject.findOne({ _id: req.params.id, userId: req.user.userId });
+    const site = await resolveProject(req.user.userId, req.params.id);
     if (!site?.customDomain) return res.status(400).json({ message: "No custom domain set" });
 
     const dns = require("dns").promises;
@@ -573,6 +741,23 @@ router.post("/:id/verify-domain", auth, async (req, res) => {
   }
 });
 
+// ── DELETE /api/builder/:id/custom-domain (Remove a custom domain) ──────────────
+router.delete("/:id/custom-domain", auth, async (req, res) => {
+  try {
+    const accessible = await resolveProject(req.user.userId, req.params.id, { select: "_id", lean: true });
+    if (!accessible) return res.status(404).json({ message: "Site not found" });
+
+    const site = await BuilderProject.findOneAndUpdate(
+      { _id: accessible._id },
+      { $unset: { customDomain: "", customDomainToken: "" }, customDomainVerified: false },
+      { new: true }
+    );
+    res.json({ message: "Custom domain removed" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // ── POST /api/builder/generate-elements (V2 AI: generate ElementNode tree) ───────────
 router.post("/generate-elements", auth, async (req, res) => {
   try {
@@ -584,9 +769,7 @@ router.post("/generate-elements", auth, async (req, res) => {
     if (!user || (user.role !== "builder" && user.role !== "admin"))
       return res.status(403).json({ message: "Forbidden" });
 
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId }).lean()
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 }).lean();
+    const project = await resolveProject(req.user.userId, projectId, { lean: true });
 
     const primaryColor = project?.primaryColor || "#6344d4";
     // existingIds: caller sends the full page id set so cross-generation dedup works (Ch 12)
@@ -620,9 +803,7 @@ router.post("/regenerate-element", auth, async (req, res) => {
     if (!user || (user.role !== "builder" && user.role !== "admin"))
       return res.status(403).json({ message: "Forbidden" });
 
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId }).lean()
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 }).lean();
+    const project = await resolveProject(req.user.userId, projectId, { lean: true });
 
     try {
       const { data, meta } = await runAiOperation(
@@ -652,7 +833,7 @@ router.post("/animate-element", auth, async (req, res) => {
     if (!user) return res.status(403).json({ message: "Forbidden" });
 
     const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId }).lean()
+      ? await resolveProject(req.user.userId, projectId, { lean: true })
       : null;
 
     try {
@@ -678,7 +859,7 @@ router.post("/ai/rewrite", auth, async (req, res) => {
     if (!user) return res.status(403).json({ message: "Forbidden" });
 
     const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId }).lean()
+      ? await resolveProject(req.user.userId, projectId, { lean: true })
       : null;
 
     try {
@@ -719,7 +900,7 @@ router.post("/ai/seo", auth, async (req, res) => {
     if (!user) return res.status(403).json({ message: "Forbidden" });
 
     const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId }).lean()
+      ? await resolveProject(req.user.userId, projectId, { lean: true })
       : null;
 
     try {
@@ -751,7 +932,7 @@ router.post("/ai/theme", auth, async (req, res) => {
     if (!user) return res.status(403).json({ message: "Forbidden" });
 
     const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId }).lean()
+      ? await resolveProject(req.user.userId, projectId, { lean: true })
       : null;
 
     try {
@@ -769,8 +950,7 @@ router.post("/ai/theme", auth, async (req, res) => {
 // ── GET /api/builder/project/:projectId/ai-memory — view AI memory (Round 5 Ch 4.3) ──
 router.get("/project/:projectId/ai-memory", auth, async (req, res) => {
   try {
-    const project = await BuilderProject.findOne({ _id: req.params.projectId, userId: req.user.userId })
-      .select("aiMemory").lean();
+    const project = await resolveProject(req.user.userId, req.params.projectId, { select: "aiMemory", lean: true });
     if (!project) return res.status(404).json({ message: "Project not found" });
     res.json({ aiMemory: project.aiMemory || {} });
   } catch (err) {
@@ -793,12 +973,13 @@ router.put("/project/:projectId/ai-memory", auth, async (req, res) => {
         : [],
       updatedAt: new Date(),
     };
+    const accessible = await resolveProject(req.user.userId, req.params.projectId, { select: "_id", lean: true });
+    if (!accessible) return res.status(404).json({ message: "Project not found" });
     const project = await BuilderProject.findOneAndUpdate(
-      { _id: req.params.projectId, userId: req.user.userId },
+      { _id: accessible._id },
       { $set: { aiMemory: clean } },
       { new: true }
     ).select("aiMemory");
-    if (!project) return res.status(404).json({ message: "Project not found" });
     res.json({ aiMemory: project.aiMemory });
   } catch (err) {
     console.error("ai-memory put error:", err);
@@ -825,11 +1006,9 @@ router.get("/ai/usage", auth, async (req, res) => {
 // ── PUT /api/builder/project/settings (Save project-level settings) ─────────
 router.put("/project/settings", auth, async (req, res) => {
   try {
-    const { canvasMode, canvasState, primaryColor, projectId } = req.body;
+    const { canvasMode, canvasState, primaryColor, projectId, notFoundPageId } = req.body;
 
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId);
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -842,9 +1021,16 @@ router.put("/project/settings", auth, async (req, res) => {
     if (primaryColor && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(primaryColor)) {
       project.primaryColor = primaryColor;
     }
+    // Phase 5 §11.4 — custom 404 page
+    if (notFoundPageId === null) {
+      project.notFoundPageId = undefined;
+    } else if (typeof notFoundPageId === "string") {
+      if (!project.pages.some((p) => p.id === notFoundPageId)) return res.status(400).json({ message: "notFoundPageId must reference an existing page" });
+      project.notFoundPageId = notFoundPageId;
+    }
 
     await project.save();
-    res.json({ canvasMode: project.canvasMode, canvasState: project.canvasState });
+    res.json({ canvasMode: project.canvasMode, canvasState: project.canvasState, notFoundPageId: project.notFoundPageId });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
@@ -857,9 +1043,7 @@ router.post("/project/sections", auth, async (req, res) => {
     if (!section || !section.id || !section.name)
       return res.status(400).json({ message: "section with id and name required" });
 
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId);
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -881,9 +1065,7 @@ router.post("/project/sections", auth, async (req, res) => {
 router.delete("/project/sections/:sectionId", auth, async (req, res) => {
   try {
     const { projectId } = req.query;
-    const project = projectId
-      ? await BuilderProject.findOne({ _id: projectId, userId: req.user.userId })
-      : await BuilderProject.findOne({ userId: req.user.userId }).sort({ updatedAt: -1 });
+    const project = await resolveProject(req.user.userId, projectId);
 
     if (!project) return res.status(404).json({ message: "Project not found" });
 
@@ -898,8 +1080,9 @@ router.delete("/project/sections/:sectionId", auth, async (req, res) => {
 // ── DELETE /api/builder/project/:projectId (Delete complete website) ───────────────
 router.delete("/project/:projectId", auth, async (req, res) => {
   try {
-    const result = await BuilderProject.deleteOne({ _id: req.params.projectId, userId: req.user.userId });
-    if (result.deletedCount === 0) return res.status(404).json({ message: "Project not found" });
+    const accessible = await resolveProject(req.user.userId, req.params.projectId, { select: "_id", lean: true });
+    if (!accessible) return res.status(404).json({ message: "Project not found" });
+    await BuilderProject.deleteOne({ _id: accessible._id });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ message: "Server error" });

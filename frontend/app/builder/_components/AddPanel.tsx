@@ -63,8 +63,8 @@ export function createElement(type: string): ElementNode {
       ...base, tag: "form",
       styles: { desktop: { display: "flex" as const, flexDirection: "column", gap: "16px", maxWidth: "480px", padding: "32px", backgroundColor: "#f9fafb", borderRadius: "12px" } },
       children: [
-        { id: uid(), tag: "input" as const, attrs: { type: "text",  placeholder: "Your name"    }, styles: { desktop: { padding: "12px 16px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", width: "100%", outline: "none" } }, children: [] },
-        { id: uid(), tag: "input" as const, attrs: { type: "email", placeholder: "Email address" }, styles: { desktop: { padding: "12px 16px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", width: "100%", outline: "none" } }, children: [] },
+        { id: uid(), tag: "input" as const, attrs: { type: "text",  name: "name",  placeholder: "Your name",    required: "true" }, styles: { desktop: { padding: "12px 16px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", width: "100%", outline: "none" } }, children: [] },
+        { id: uid(), tag: "input" as const, attrs: { type: "email", name: "email", placeholder: "Email address", required: "true" }, styles: { desktop: { padding: "12px 16px", border: "1px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", width: "100%", outline: "none" } }, children: [] },
         { id: uid(), tag: "button" as const, content: "Submit", attrs: { type: "submit" }, styles: { desktop: { padding: "12px 24px", backgroundColor: "#6344d4", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer" } }, children: [] },
       ],
     };

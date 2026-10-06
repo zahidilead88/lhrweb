@@ -2,19 +2,26 @@ const multer  = require("multer");
 const path    = require("path");
 
 // ── Allowed MIME types ────────────────────────────────────────────────────────
+// Phase 6 (docs/LHRWEB_MASTER_IMPLEMENTATION_PLAN.md §12) — the asset library
+// spec calls for images/videos/SVG/files/fonts; widened from the original
+// images-only allowlist (still used as-is by the pre-existing admin-page
+// upload flows, so this only adds categories, never removes one).
 const ALLOWED_MIMES = [
   "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
+  "video/mp4", "video/webm",
+  "font/woff", "font/woff2", "font/ttf", "application/font-woff", "application/font-woff2",
+  "application/pdf",
 ];
 
 // ── File size limits ──────────────────────────────────────────────────────────
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB for images, 50MB for videos
+const MAX_SIZE = 25 * 1024 * 1024; // 25MB — covers images/fonts/small video clips
 
 // ── File filter: reject unsupported types before they reach storage ───────────
 function fileFilter(req, file, cb) {
   if (ALLOWED_MIMES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error(`Unsupported file type: ${file.mimetype}. Only JPG, PNG, WebP, SVG and GIF are supported.`));
+    cb(new Error(`Unsupported file type: ${file.mimetype}.`));
   }
 }
 
@@ -47,8 +54,8 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
     cloudinary,
     params: {
       folder:          "lhrweb",
-      allowed_formats: ["jpg", "jpeg", "png", "webp", "gif", "svg"],
-      transformation:  [{ width: 1600, crop: "limit" }],
+      resource_type:   "auto", // let Cloudinary route image/video/raw (fonts, pdf) correctly
+      allowed_formats: ["jpg", "jpeg", "png", "webp", "gif", "svg", "mp4", "webm", "woff", "woff2", "ttf", "pdf"],
       public_id:       (req, file) => Date.now() + "-" + path.parse(file.originalname).name,
     },
   });

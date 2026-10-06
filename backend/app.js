@@ -49,9 +49,12 @@ app.use(cors({
   credentials: true,
 }));
 
-// Stripe webhook needs raw body — must be before express.json()
+// Stripe webhooks need raw body — must be before express.json()
 const { router: subscriptionRouter, webhookHandler } = require("./routes/subscriptions");
 app.post("/api/subscriptions/webhook", express.raw({ type: "application/json" }), webhookHandler);
+
+const { router: commerceRouter, webhookHandler: commerceWebhookHandler } = require("./routes/commerce");
+app.post("/api/commerce/webhook", express.raw({ type: "application/json" }), commerceWebhookHandler);
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -88,6 +91,18 @@ app.use("/api/sections", sectionRoutes);
 const uploadRoute = require("./routes/upload");
 app.use("/api/upload", uploadRoute);
 
+const assetsRoute = require("./routes/assets");
+app.use("/api/assets", assetsRoute);
+
+const formsRoute = require("./routes/forms");
+app.use("/api/forms", formsRoute);
+
+const analyticsRoute = require("./routes/analytics");
+app.use("/api/analytics", analyticsRoute);
+
+const agencyRoute = require("./routes/agency");
+app.use("/api/agency", agencyRoute);
+
 const serviceRoutes = require("./routes/services");
 app.use("/api/services", serviceRoutes);
 
@@ -122,11 +137,9 @@ app.use("/api/export", exportRoutes);
 
 app.use("/api/subscriptions", subscriptionRouter);
 
-// Part 6 — commerce catalog (products/collections) + CMS (collections/entries).
-// Cart/checkout/order/webhook routes are deliberately not mounted yet — see
-// routes/commerce.js header comment.
-const commerceRoutes = require("./routes/commerce");
-app.use("/api/commerce", commerceRoutes);
+// Part 6 / Phase 3 — commerce catalog, Stripe Connect, cart, checkout (webhook
+// mounted above, before express.json()). Plus CMS (collections/entries).
+app.use("/api/commerce", commerceRouter);
 
 const cmsRoutes = require("./routes/cms");
 app.use("/api/cms-collections", cmsRoutes);
